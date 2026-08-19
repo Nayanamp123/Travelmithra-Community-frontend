@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation } from 'react-router-dom';
+import html2pdf from 'html2pdf.js';
 import { adminAPI, type AdminCredentials } from '../api/client';
 import travelMithraLogoAsset from '../assets/travel-mithra-logo.png';
 import thankYouLogoAsset from '../assets/thank-you-logo.png';
@@ -9,6 +10,8 @@ type Booking = { id: string; customer: string; route: string; date: string; amou
 type Customer = { name: string; email: string; phone: string; password?: string; trips: number; joined: string; active: boolean };
 type Reward = { id: number; agent: string; traveler: string; bookingId?: string; amount: number; note: string; status: string; createdAt: string };
 const AGENTS_STORAGE_KEY = 'travelmithra-agents';
+const RECEIPT_SEQUENCE_STORAGE_KEY = 'travelmithra-next-receipt-number-v2';
+const RECEIPT_NUMBERS_STORAGE_KEY = 'travelmithra-receipt-numbers-v2';
 
 const executives = ['All sales executives', 'Aliya', 'Keerthi', 'Sharanya'];
 const seedBookings: Booking[] = [
@@ -38,11 +41,14 @@ export default function AdminManagement({ credentials }: { credentials: AdminCre
   const [formAmount, setFormAmount] = useState(0);
   const [formReceived, setFormReceived] = useState(0);
   const [formPrevious, setFormPrevious] = useState(0);
+  const [bookingError, setBookingError] = useState('');
+  const [bookingSuccess, setBookingSuccess] = useState('');
   useEffect(() => { if (!editingBooking || !showBooking) return; requestAnimationFrame(() => { const heading = document.querySelector('.booking-modal h3'); if (heading) heading.textContent = 'Update Booking'; const set = (name: string, value: string) => { const input = document.querySelector(`[name="${name}"]`) as HTMLInputElement | HTMLSelectElement | null; if (input) input.value = value; }; set('customer', editingBooking.customer); set('destination', editingBooking.route); set('date', editingBooking.date); set('adults', String(editingBooking.adults)); set('kids', String(editingBooking.kids)); set('amount', String(editingBooking.amount)); set('received', String(editingBooking.received)); set('previous', String(editingBooking.previous)); set('paymentMode', editingBooking.paymentMode); set('executive', editingBooking.executive); set('remarks', editingBooking.remarks); }); }, [editingBooking, showBooking]);
 
   const filteredBookings = useMemo(() => bookings.filter((b) => (executive === 'All sales executives' || b.executive === executive) && (!query || `${b.customer} ${b.id} ${b.route}`.toLowerCase().includes(query.toLowerCase()))), [bookings, executive, query]);
   const reportBookings = bookings.filter((b) => { const bookingDate = String(b.date).slice(0, 10); return (executive === 'All sales executives' || b.executive === executive) && bookingDate >= from && bookingDate <= to; });
-  const total = reportBookings.reduce((sum, b) => sum + b.amount, 0);
+  const totalPaid = reportBookings.reduce((sum, b) => sum + Number(b.received || 0), 0);
+  const totalTravelers = reportBookings.reduce((sum, b) => sum + Number(b.adults || 0) + Number(b.kids || 0), 0);
 
   const formatDate = (dateStr: string) => {
     const d = new Date(dateStr);
@@ -54,7 +60,16 @@ export default function AdminManagement({ credentials }: { credentials: AdminCre
 
   const downloadReceipt = (booking: Booking) => {
     const balance = booking.previous + booking.received - booking.amount;
-    const receiptNo = `TMH/21/${formatDate(booking.date).replace(/\//g, '')}`;
+    const receiptNumbers = JSON.parse(localStorage.getItem(RECEIPT_NUMBERS_STORAGE_KEY) || '{}') as Record<string, number>;
+    let receiptNumber = receiptNumbers[booking.id];
+    if (!Number.isInteger(receiptNumber)) {
+      const storedNextReceipt = Number(localStorage.getItem(RECEIPT_SEQUENCE_STORAGE_KEY));
+      receiptNumber = Number.isInteger(storedNextReceipt) && storedNextReceipt >= 48 ? storedNextReceipt : 48;
+      receiptNumbers[booking.id] = receiptNumber;
+      localStorage.setItem(RECEIPT_NUMBERS_STORAGE_KEY, JSON.stringify(receiptNumbers));
+      localStorage.setItem(RECEIPT_SEQUENCE_STORAGE_KEY, String(receiptNumber + 1));
+    }
+    const receiptNo = `TMH/${receiptNumber}/${formatDate(booking.date).replace(/\//g, '')}`;
     const amountToPay = Math.abs(Math.min(balance, 0));
 
     const html = `<!DOCTYPE html>
@@ -148,7 +163,7 @@ body:after{display:none}
 </div>
 <div class="detail-item">
   <div class="label">Group of</div>
-  <div class="value">${booking.adults} Adult + ${booking.kids} Kid ADULT</div>
+  <div class="value">${booking.adults} Adult + ${booking.kids} Kid</div>
 </div>
 <div class="detail-item">
   <div class="label">Payment Accepted by</div>
@@ -172,22 +187,88 @@ body:after{display:none}
     const thankYouLogoUrl = new URL(thankYouLogoAsset, window.location.href).href;
     const brandedHtml = html
       .replace(/src="data:image\/png;base64,[^"]+"/, `src="${receiptLogoUrl}"`)
-      .replace('__THANK_YOU_LOGO__', thankYouLogoUrl);
+      .replace('__THANK_YOU_LOGO__', thankYouLogoUrl)
+      .replace('<title>Receipt</title>', `<title>Receipt - ${booking.customer}</title>`);
     const blob = new Blob([brandedHtml], { type: 'text/html' });
     const url = URL.createObjectURL(blob);
     const win = window.open(url, '_blank');
-    if (win) { win.onload = () => { win.print(); }; } else { const link = document.createElement('a'); link.href = url; link.download = `${booking.customer.replace(/\s+/g, '-').toLowerCase()}-receipt.html`; link.click(); }
+    if (win) { win.onload = () => { win.document.title = `Receipt - ${booking.customer}`; win.print(); }; } else { const link = document.createElement('a'); link.href = url; link.download = `${booking.customer.replace(/\s+/g, '-').toLowerCase()}-receipt.html`; link.click(); }
     URL.revokeObjectURL(url);
   };
 
-  const addBooking = async (event: React.FormEvent<HTMLFormElement>) => { event.preventDefault(); const form = new FormData(event.currentTarget); const booking = { id: `TM-${24082 + bookings.length}`, customer: String(form.get('customer')), route: String(form.get('destination')), date: String(form.get('date')), amount: Number(form.get('amount') || 0), received: Number(form.get('received') || 0), previous: Number(form.get('previous') || 0), adults: Number(form.get('adults') || 0), kids: Number(form.get('kids') || 0), executive: String(form.get('executive')), active: true, paymentMode: String(form.get('paymentMode') || 'BANK TRANSFER'), remarks: String(form.get('remarks') || '') }; try { const saved = await adminAPI.saveBooking(credentials, booking); setBookings((items) => [saved, ...items]); setShowBooking(false); event.currentTarget.reset(); } catch (error) { console.error(error); } };
+  const downloadBookingCSV = (booking: Booking) => {
+    const csvContent = [
+      ['Booking ID', 'Customer', 'Destination', 'Trip Date', 'Adults', 'Kids', 'Total Travelers', 'Amount', 'Received', 'Previous', 'Balance', 'Payment Mode', 'Executive', 'Remarks', 'Status'],
+      [
+        booking.id,
+        booking.customer,
+        booking.route,
+        booking.date,
+        booking.adults,
+        booking.kids,
+        Number(booking.adults) + Number(booking.kids),
+        booking.amount,
+        booking.received,
+        booking.previous,
+        booking.previous + booking.received - booking.amount,
+        booking.paymentMode,
+        booking.executive,
+        booking.remarks || '',
+        booking.active ? 'Confirmed' : 'Inactive'
+      ]
+    ]
+      .map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+      .join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `${booking.customer.replace(/\s+/g, '-').toLowerCase()}-${booking.id}.csv`);
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const addBooking = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setBookingError('');
+    setBookingSuccess('');
+    const form = new FormData(event.currentTarget);
+    const booking = {
+      id: `TM-${24082 + bookings.length}`,
+      customer: String(form.get('customer')),
+      route: String(form.get('destination')),
+      date: String(form.get('date')),
+      amount: Number(form.get('amount') || 0),
+      received: Number(form.get('received') || 0),
+      previous: Number(form.get('previous') || 0),
+      adults: Number(form.get('adults') || 0),
+      kids: Number(form.get('kids') || 0),
+      executive: String(form.get('executive')),
+      active: true,
+      paymentMode: String(form.get('paymentMode') || 'BANK TRANSFER'),
+      remarks: String(form.get('remarks') || '')
+    };
+
+    try {
+      const saved = await adminAPI.saveBooking(credentials, booking);
+      setBookings((items) => [saved, ...items]);
+      setShowBooking(false);
+      setBookingSuccess('Booking created successfully!');
+      setTimeout(() => setBookingSuccess(''), 3000);
+      event.currentTarget.reset();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to save booking';
+      setBookingError(message);
+      console.error(error);
+    }
+  };
 
   const downloadReport = () => {
-    const rows = [['Sales report', `${from} to ${to}`], ['Booking ID', 'Customer', 'Route', 'Executive', 'Date', 'Amount'], ...reportBookings.map((b) => [b.id, b.customer, b.route, b.executive, b.date, money(b.amount)])];
-    const reportRows = reportBookings.map((b) => `<tr><td>${b.id}</td><td>${b.customer}</td><td>${b.route}</td><td>${b.executive}</td><td>${String(b.date).slice(0, 10)}</td><td>${money(b.amount)}</td></tr>`).join('');
+    const reportRows = reportBookings.map((b) => `<tr><td>${b.id}</td><td>${b.customer}</td><td>${b.route}</td><td>${b.executive}</td><td>${String(b.date).slice(0, 10)}</td><td>${Number(b.adults || 0) + Number(b.kids || 0)}</td><td>${money(b.amount)}</td></tr>`).join('');
     const reportWindow = window.open('', '_blank');
     if (!reportWindow) return;
-    reportWindow.document.write(`<!doctype html><html><head><title>Sales Report</title><style>@page{size:A4 landscape;margin:14mm}body{font-family:Arial,sans-serif;color:#13243a}h1{color:#1777b9}table{width:100%;border-collapse:collapse;margin-top:24px}th,td{border:1px solid #cbd6e2;padding:10px;text-align:left}th{background:#edf4f8;font-weight:600}.summary{display:flex;gap:35px;margin-top:18px}.summary strong{display:block;font-size:20px}</style></head><body><h1>Travelmithra Sales Report</h1><p>Period: ${from} to ${to} | Filter: ${executive}</p><div class="summary"><div>Total Sales<strong>${money(total)}</strong></div><div>Bookings<strong>${reportBookings.length}</strong></div></div><table><thead><tr><th>Booking ID</th><th>Customer</th><th>Route</th><th>Sales Executive</th><th>Date</th><th>Amount</th></tr></thead><tbody>${reportRows || '<tr><td colspan="6">No bookings found.</td></tr>'}</tbody></table></body></html>`);
+    reportWindow.document.write(`<!doctype html><html><head><title>Sales Report</title><style>@page{size:A4 landscape;margin:14mm}body{font-family:Arial,sans-serif;color:#13243a}.brand{display:flex;align-items:center;gap:18px;border-bottom:2px solid #1777b9;padding-bottom:12px}.brand img{width:150px;max-height:70px;object-fit:contain}.brand h1{color:#1777b9;margin:0}.brand p{margin:4px 0 0;color:#52606b}table{width:100%;border-collapse:collapse;margin-top:24px}th,td{border:1px solid #cbd6e2;padding:10px;text-align:left}th{background:#edf4f8;font-weight:600}.summary{display:flex;gap:35px;margin-top:18px}.summary strong{display:block;font-size:20px}</style></head><body><div class="brand"><img src="${travelMithraLogoAsset}" alt="Travelmithra logo"/><div><h1>Travelmithra Sales Report</h1><p>Travelmithra Holidays • India</p></div></div><p>Period: ${from} to ${to} | Filter: ${executive}</p><div class="summary"><div>Total Paid<strong>${money(totalPaid)}</strong></div><div>Total Bookings<strong>${reportBookings.length}</strong></div><div>Total Travelers<strong>${totalTravelers}</strong></div></div><table><thead><tr><th>Booking ID</th><th>Customer</th><th>Route</th><th>Sales Executive</th><th>Date</th><th>Travelers</th><th>Amount</th></tr></thead><tbody>${reportRows || '<tr><td colspan="7">No bookings found.</td></tr>'}</tbody></table></body></html>`);
     reportWindow.document.title = 'Travelmithra Holidays Sales Report'; reportWindow.document.close(); reportWindow.focus(); reportWindow.print();
   };
 
@@ -206,22 +287,26 @@ return <section className="crm-page" onClick={(event) => { const target = event.
     {view === 'agents' && <AgentManagement />}
     <div className="crm-topbar"><div><p className="section-kicker">Travelmithra operations</p><h2>{view === 'bookings' ? 'Bookings' : view === 'customers' ? 'Customers' : 'Sales reports'}</h2><p className="crm-subtitle">Manage your travel business with clarity.</p></div><div className="crm-user"><span className="crm-avatar">A</span><span><strong>Admin</strong><small>Operations</small></span><span>⌄</span></div></div>
     {view === 'bookings' && <><div className="crm-toolbar"><div><h2>Bookings Management</h2><p>Manage all bookings here</p></div><button className="crm-primary" onClick={() => setShowBooking(true)}>＋ Create Booking</button></div><div className="crm-filters booking-filters"><input placeholder="Search destination/customer" value={query} onChange={(e) => setQuery(e.target.value)} /><select><option>All Customers</option></select><select><option>All Payment Status</option></select><select><option>All Booking Status</option></select><input type="date" /><input type="date" /></div><BookingTable bookings={filteredBookings} onToggle={(id) => setBookings(bookings.map((b) => b.id === id ? { ...b, active: !b.active } : b))} onDownload={downloadReceipt} onDelete={async (id) => { if (!window.confirm('Delete this booking?')) return; await adminAPI.deleteBooking(credentials, id); setBookings((items) => items.filter((b) => b.id !== id)); }} /></>}
-    {view === 'customers' && <><div className="crm-toolbar"><div><h2>Customers Management</h2><p>Manage all customer details here</p></div><button className="crm-primary" onClick={() => { setEditingCustomer(null); setShowCustomer(true); }}>＋ Create Customer</button></div><div className="crm-table-wrap customer-table-wrap"><table className="crm-table"><thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Status</th><th>Actions</th></tr></thead><tbody>{customers.map((c) => <tr key={c.email}><td>{c.name}</td><td>{c.email}</td><td>{c.phone}</td><td><span className={`status-pill ${c.active ? 'active' : 'inactive'}`}>{c.active ? 'Active' : 'Inactive'}</span></td><td><button className="table-action" onClick={() => { setEditingCustomer(c); setShowCustomer(true); }}>Edit</button><button className="table-action" onClick={() => setCustomers(customers.map((item) => item.email === c.email ? { ...item, active: !item.active } : item))}>{c.active ? 'Inactive' : 'Active'}</button></td></tr>)}</tbody></table>{customers.length === 0 && <p className="empty-state">No customers yet.</p>}</div></>}
-    {view === 'reports' && <><div className="report-hero"><div><p className="section-kicker">Performance overview</p><h3>Sales report</h3><p>Analyze bookings and revenue by sales executive and date range.</p></div><button className="crm-primary" onClick={downloadReport}>⇩ Download PDF</button></div><div className="report-filters"><label>Sales executive<select value={executive} onChange={(e) => setExecutive(e.target.value)}>{executives.map((e) => <option key={e}>{e}</option>)}</select></label><label>From<input type="date" value={from} onChange={(e) => setFrom(e.target.value)} /></label><label>To<input type="date" value={to} onChange={(e) => setTo(e.target.value)} /></label></div><div className="report-stats"><div><span>Total sales</span><strong>{money(total)}</strong></div><div><span>Bookings</span><strong>{reportBookings.length}</strong></div><div><span>Average booking</span><strong>{money(reportBookings.length ? Math.round(total / reportBookings.length) : 0)}</strong></div><div className="report-card"><h3>Monthly sales report <small>{from} — {to}</small></h3><BookingTable bookings={reportBookings} onToggle={() => undefined} /></div></div></>}
+    {view === 'customers' && <><div className="crm-toolbar"><div><h2>Customers Management</h2><p>Manage all customer details here</p></div><button className="crm-primary" onClick={() => { setEditingCustomer(null); setShowCustomer(true); }}>＋ Create Customer</button></div><div className="crm-table-wrap customer-table-wrap"><table className="crm-table"><thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Actions</th></tr></thead><tbody>{customers.map((c) => <tr key={c.email}><td>{c.name}</td><td>{c.email}</td><td>{c.phone}</td><td><span className={`status-pill ${c.active ? 'active' : 'inactive'}`}>{c.active ? 'Active' : 'Inactive'}</span></td><td><button className="table-action" onClick={() => { setEditingCustomer(c); setShowCustomer(true); }}>Edit</button><button className="table-action" onClick={() => setCustomers(customers.map((item) => item.email === c.email ? { ...item, active: !item.active } : item))}>{c.active ? 'Inactive' : 'Active'}</button></td></tr>)}</tbody></table>{customers.length === 0 && <p className="empty-state">No customers yet.</p>}</div></>}
+    {view === 'reports' && <><div className="report-hero"><div><p className="section-kicker">Performance overview</p><h3>Sales report</h3><p>Travelmithra Holidays • India</p><p>Analyze bookings, paid amounts, and traveler totals by date range.</p></div><img src={travelMithraLogoAsset} alt="Travelmithra logo" className="report-logo" /><button className="crm-primary" onClick={downloadReport}>⇩ Download PDF</button></div><div className="report-filters"><label>Sales executive<select value={executive} onChange={(e) => setExecutive(e.target.value)}>{executives.map((e) => <option key={e}>{e}</option>)}</select></label><label>From<input type="date" value={from} onChange={(e) => setFrom(e.target.value)} /></label><label>To<input type="date" value={to} onChange={(e) => setTo(e.target.value)} /></label></div><div className="report-stats"><div><span>Total paid amount</span><strong>{money(totalPaid)}</strong></div><div><span>Total bookings</span><strong>{reportBookings.length}</strong></div><div><span>Total travelers</span><strong>{totalTravelers}</strong></div><div className="report-card"><h3>Monthly sales report <small>{from} — {to}</small></h3><BookingTable bookings={reportBookings} onToggle={() => undefined} onDownload={downloadReceipt} /></div></div></>}
     {showCustomer && <div className="modal-backdrop"><form className="crm-modal" onSubmit={saveCustomer}><button type="button" className="modal-close" onClick={() => { setShowCustomer(false); setEditingCustomer(null); }}>×</button><h3>{editingCustomer ? 'Edit Customer' : 'Create Customer'}</h3><input name="name" required defaultValue={editingCustomer?.name} placeholder="Enter customer name" /><input name="email" type="email" required defaultValue={editingCustomer?.email} placeholder="Enter email" /><input name="phone" required defaultValue={editingCustomer?.phone} placeholder="Enter phone number" /><input name="password" type="password" required={!editingCustomer} placeholder={editingCustomer ? 'Leave blank to keep password' : 'Enter password'} /><button className="crm-primary">{editingCustomer ? 'Save Changes' : 'Create Customer'}</button></form></div>}
-    {showBooking && <div className="modal-backdrop booking-drawer"><form className="crm-modal booking-modal" onSubmit={addBooking}><button type="button" className="modal-close" onClick={() => setShowBooking(false)}>×</button><h3>Create Booking</h3><label>Customer<select name="customer" required><option value="">Select Customer</option>{customers.map((c) => <option key={c.email}>{c.name}</option>)}</select></label><label>Destination<input name="destination" required placeholder="Destination" /></label><label>Trip Date<input name="date" type="date" required /></label><div className="two-fields"><label>Adults<input name="adults" type="number" min="1" defaultValue="1" /></label><label>Kids<input name="kids" type="number" min="0" defaultValue="0" /></label></div><label>Total Closing Amount<input name="amount" type="number" min="0" required placeholder="Total closing amount" /></label><label>Sum of Amount<input name="received" type="number" min="0" defaultValue="0" placeholder="Sum of amount" /></label><label>Previous Amount<input name="previous" type="number" min="0" defaultValue="0" placeholder="Previous amount" /></label><label>Balance Amount<input disabled value="Calculated: previous + sum - closing" readOnly /></label><label>Payment Mode<select name="paymentMode" required><option value="BANK TRANSFER">BANK TRANSFER</option><option value="CASH">CASH</option><option value="CARD">CARD</option><option value="UPI">UPI</option><option value="CHEQUE">CHEQUE</option></select></label><label>Remarks<input name="remarks" placeholder="Remarks if any" /></label><label>Sales Executive<select name="executive">{executives.slice(1).map((e) => <option key={e}>{e}</option>)}</select></label><button className="crm-primary">Create Booking</button></form></div>}
+    {showBooking && <div className="modal-backdrop booking-drawer"><form className="crm-modal booking-modal" onSubmit={addBooking}><button type="button" className="modal-close" onClick={() => { setShowBooking(false); setBookingError(''); }}>×</button><h3>Create Booking</h3>{bookingError && <div style={{ color: '#d32f2f', backgroundColor: '#ffebee', padding: '12px', borderRadius: '4px', marginBottom: '16px', fontSize: '14px' }}>Error: {bookingError}</div>}{bookingSuccess && <div style={{ color: '#388e3c', backgroundColor: '#e8f5e9', padding: '12px', borderRadius: '4px', marginBottom: '16px', fontSize: '14px' }}>{bookingSuccess}</div>}<label>Customer<select name="customer" required><option value="">Select Customer</option>{customers.map((c) => <option key={c.email}>{c.name}</option>)}</select></label><label>Destination<input name="destination" required placeholder="Destination" /></label><label>Trip Date<input name="date" type="date" required /></label><div className="two-fields"><label>Adults<input name="adults" type="number" min="1" defaultValue="1" /></label><label>Kids<input name="kids" type="number" min="0" defaultValue="0" /></label></div><label>Total Closing Amount<input name="amount" type="number" min="0" required placeholder="Total closing amount" /></label><label>Sum of Amount<input name="received" type="number" min="0" defaultValue="0" placeholder="Sum of amount" /></label><label>Previous Amount<input name="previous" type="number" min="0" defaultValue="0" placeholder="Previous amount" /></label><label>Balance Amount<input disabled value="Calculated: previous + sum - closing" readOnly /></label><label>Payment Mode<select name="paymentMode" required><option value="BANK TRANSFER">BANK TRANSFER</option><option value="CASH">CASH</option><option value="CARD">CARD</option><option value="UPI">UPI</option><option value="CHEQUE">CHEQUE</option></select></label><label>Remarks<input name="remarks" placeholder="Remarks if any" /></label><label>Sales Executive<select name="executive">{executives.slice(1).map((e) => <option key={e}>{e}</option>)}</select></label><button className="crm-primary">Create Booking</button></form></div>}
   </section>;
 }
 
-function BookingTable({ bookings, onToggle, onDownload, onDelete }: { bookings: Booking[]; onToggle: (id: string) => void; onDownload?: (booking: Booking) => void; onDelete?: (id: string) => void }) { return <div className="crm-table-wrap"><table className="crm-table"><thead><tr><th>Destination / Customer</th><th>Trip Date</th><th>Travellers</th><th>Amount</th><th>Payment</th><th>Booking</th><th></th></tr></thead><tbody>{bookings.map((b) => <tr key={b.id}><td><strong>{b.route}</strong><small className="table-sub">{b.customer}</small></td><td>{b.date}</td><td>{b.adults} Adult + {b.kids} Kid</td><td><strong>{money(b.amount)}</strong></td><td>Partial</td><td>{b.remarks || '—'}</td><td><span className={`status-pill ${b.active ? 'active' : 'inactive'}`}>{b.active ? 'Confirmed' : 'Inactive'}</span></td><td><button className="table-action">Edit</button><button className="table-action" onClick={() => onDownload?.(b)}>Download receipt</button><button className="table-action" onClick={() => onToggle(b.id)}>{b.active ? 'Inactive' : 'Active'}</button>{onDelete && <button className="table-action danger" onClick={() => onDelete(b.id)}>Delete</button>}</td></tr>)}</tbody></table>{bookings.length === 0 && <p className="empty-state">No bookings match this filter.</p>}</div>; }
+function BookingTable({ bookings, onToggle, onDownload, onDelete }: { bookings: Booking[]; onToggle: (id: string) => void; onDownload?: (booking: Booking) => void; onDelete?: (id: string) => void }) { return <div className="crm-table-wrap"><table className="crm-table"><thead><tr><th>Destination / Customer</th><th>Trip Date</th><th>Members</th><th>Total Travelers</th><th>Amount</th><th>Payment</th><th>Booking</th><th>Status</th><th>Actions</th></tr></thead><tbody>{bookings.map((b) => <tr key={b.id}><td><strong>{b.route}</strong><small className="table-sub">{b.customer}</small></td><td>{b.date}</td><td>{b.adults} Adult + {b.kids} Kid</td><td><strong>{Number(b.adults || 0) + Number(b.kids || 0)}</strong></td><td><strong>{money(b.amount)}</strong></td><td>Partial</td><td>{b.remarks || '—'}</td><td><span className={`status-pill ${b.active ? 'active' : 'inactive'}`}>{b.active ? 'Confirmed' : 'Inactive'}</span></td><td><div className="booking-actions"><button className="table-action">Edit</button><button className="table-action download-btn" onClick={() => onDownload?.(b)}>Download receipt</button><button className="table-action" onClick={() => onToggle(b.id)}>{b.active ? 'Inactive' : 'Active'}</button>{onDelete && <button className="table-action danger" onClick={() => onDelete(b.id)}>Delete</button>}</div></td></tr>)}</tbody></table>{bookings.length === 0 && <p className="empty-state">No bookings match this filter.</p>}</div>; }
 
 function AgentRewards({ bookings, rewards, credentials, onIssued }: { bookings: Booking[]; rewards: Reward[]; credentials: AdminCredentials; onIssued: (reward: Reward) => void }) {
   const agentNames: string[] = [];
   const [rewardRate, setRewardRate] = useState(5);
   const [agents] = useState<{ name: string }[]>(() => JSON.parse(localStorage.getItem(AGENTS_STORAGE_KEY) || '[]'));
+  const [month, setMonth] = useState(new Date().toISOString().slice(0, 7));
   const [showIssue, setShowIssue] = useState(false);
   const issue = async (event: React.FormEvent<HTMLFormElement>) => { event.preventDefault(); const form = new FormData(event.currentTarget); try { const reward = await adminAPI.issueReward(credentials, { agent: form.get('agent'), traveler: form.get('traveler'), bookingId: form.get('bookingId'), amount: form.get('amount'), note: form.get('note') }); onIssued(reward); setShowIssue(false); event.currentTarget.reset(); } catch (error) { console.error(error); } };
-  return <><div className="crm-toolbar"><div><h2>Agent Rewards</h2><p>Issue a reward after an agent converts a traveler into a trip.</p></div><button type="button" className="crm-primary" onClick={() => setShowIssue(true)}>＋ Issue Reward</button></div><div className="crm-table-wrap rewards-table-wrap"><table className="crm-table"><thead><tr><th>Agent</th><th>Traveler</th><th>Booking</th><th>Reward</th><th>Status</th></tr></thead><tbody>{rewards.map((reward) => <tr key={reward.id}><td><strong>{reward.agent}</strong></td><td>{reward.traveler}</td><td>{reward.bookingId || '—'}</td><td><strong>{money(Number(reward.amount))}</strong></td><td><span className="status-pill active">{reward.status}</span></td></tr>)}</tbody></table>{rewards.length === 0 && <p className="empty-state">No rewards issued yet.</p>}</div>{showIssue && <div className="modal-backdrop"><form className="crm-modal" onSubmit={issue}><button type="button" className="modal-close" onClick={() => setShowIssue(false)}>×</button><h3>Issue Reward</h3><p className="crm-subtitle">Reward the agent who converted a traveler into a trip.</p>{agents.length ? <label>Agent name<select name="agent" required defaultValue=""><option value="" disabled>Select agent</option>{agents.map((agent) => <option key={agent.name}>{agent.name}</option>)}</select></label> : <p className="empty-state">Create an agent first before issuing a reward.</p>}<label>Traveler name<input name="traveler" required placeholder="Enter traveler name" /></label><label>Booking ID<input name="bookingId" placeholder="Optional booking ID" /></label><label>Reward amount<input name="amount" required type="number" min="1" placeholder="Enter reward amount" /></label><label>Note<input name="note" placeholder="Optional note" /></label><button className="crm-primary" disabled={!agents.length}>Issue Reward</button></form></div>}</>;
+  const sessionRewards = rewards.filter((reward) => reward.status !== 'archived');
+  const monthlyRewards = rewards.filter((reward) => reward.status !== 'archived' && reward.createdAt.slice(0, 7) === month);
+  const rows = (items: Reward[], removable: boolean) => items.map((reward) => <tr key={reward.id}><td><strong>{reward.agent}</strong></td><td>{reward.traveler}</td><td>{reward.bookingId || '—'}</td><td><strong>{money(Number(reward.amount))}</strong></td><td><span className="status-pill active">Issued</span></td>{removable && <td><button type="button" className="table-action danger" onClick={async () => { if (!window.confirm(`Remove ${reward.agent} from this reward session?`)) return; await adminAPI.removeRewardFromSession(credentials, reward.id); window.location.reload(); }}>Remove</button></td>}</tr>);
+  return <><div className="crm-toolbar"><div><h2>Agent Rewards</h2><p>Issued rewards are shown separately from the active reward session.</p></div><button type="button" className="crm-primary" onClick={() => setShowIssue(true)}>＋ Issue Reward</button></div><h3>Current Reward Session</h3><div className="crm-table-wrap rewards-table-wrap"><table className="crm-table"><thead><tr><th>Agent</th><th>Traveler</th><th>Booking</th><th>Reward</th><th>Status</th><th>Actions</th></tr></thead><tbody>{rows(sessionRewards, true)}</tbody></table>{sessionRewards.length === 0 && <p className="empty-state">No rewards in the current session.</p>}</div><div className="crm-toolbar"><div><h3>Monthly Issued Agent Rewards</h3><p>Historical issued rewards for the selected month.</p></div><input type="month" value={month} onChange={(event) => setMonth(event.target.value)} /></div><div className="crm-table-wrap rewards-table-wrap"><table className="crm-table"><thead><tr><th>Agent</th><th>Traveler</th><th>Booking</th><th>Reward</th><th>Status</th></tr></thead><tbody>{rows(monthlyRewards, false)}</tbody></table>{monthlyRewards.length === 0 && <p className="empty-state">No issued rewards for this month.</p>}</div>{showIssue && <div className="modal-backdrop"><form className="crm-modal" onSubmit={issue}><button type="button" className="modal-close" onClick={() => setShowIssue(false)}>×</button><h3>Issue Reward</h3><p className="crm-subtitle">Reward the agent who converted a traveler into a trip.</p>{agents.length ? <label>Agent name<select name="agent" required defaultValue=""><option value="" disabled>Select agent</option>{agents.map((agent) => <option key={agent.name}>{agent.name}</option>)}</select></label> : <p className="empty-state">Create an agent first before issuing a reward.</p>}<label>Traveler name<input name="traveler" required placeholder="Enter traveler name" /></label><label>Booking ID<input name="bookingId" placeholder="Optional booking ID" /></label><label>Reward amount<input name="amount" required type="number" min="1" placeholder="Enter reward amount" /></label><label>Note<input name="note" placeholder="Optional note" /></label><button className="crm-primary" disabled={!agents.length}>Issue Reward</button></form></div>}</>;
 }
 
 function AgentManagement() {
@@ -239,13 +324,6 @@ function AgentManagement() {
   const addAgent = (event: React.FormEvent) => { event.preventDefault(); if (!/^\d{12}$/.test(aadhaar) || !/^\d{10}$/.test(phone) || !sentOtp || otp !== sentOtp || !otpVerified) return; const updated = [...agents, { name, executive, phone, aadhaar }]; setAgents(updated); localStorage.setItem(AGENTS_STORAGE_KEY, JSON.stringify(updated)); setName(''); setPhone(''); setAadhaar(''); setOtp(''); setSentOtp(''); setOtpVerified(false); setShowCreate(false); };
   return <><div className="crm-toolbar"><div><h2>Agent Management</h2><p>Manage agents under each Sales Executive.</p></div><button type="button" className="crm-primary" onClick={() => setShowCreate(true)}>＋ Create Agent</button></div><div className="crm-table-wrap"><table className="crm-table"><thead><tr><th>Agent Name</th><th>Sales Executive</th><th>Mobile</th><th>Aadhaar</th><th>Reward Status</th><th>Actions</th></tr></thead><tbody>{agents.map((agent) => <tr key={`${agent.name}-${agent.phone}`}><td><strong>{agent.name}</strong></td><td>{agent.executive}</td><td>{agent.phone}</td><td>{agent.aadhaar}</td><td>Verified</td><td><button type="button" className="table-action danger" onClick={() => { if (window.confirm(`Delete agent ${agent.name}?`)) setAgents((items) => items.filter((item) => item !== agent)); }}>Delete</button></td></tr>)}</tbody></table>{agents.length === 0 && <p className="empty-state">No agents created yet.</p>}</div>{showCreate && <div className="modal-backdrop"><form className="crm-modal" onSubmit={addAgent}><button type="button" className="modal-close" onClick={() => setShowCreate(false)}>×</button><h3>Create Agent</h3><input required placeholder="Agent name" value={name} onChange={(event) => setName(event.target.value)} /><input required placeholder="10-digit mobile number" value={phone} onChange={(event) => { setPhone(event.target.value.replace(/\D/g, '').slice(0, 10)); setOtpVerified(false); }} /><input required placeholder="12-digit Aadhaar number" value={aadhaar} onChange={(event) => { setAadhaar(event.target.value.replace(/\D/g, '').slice(0, 12)); setOtpVerified(false); }} /><label>Sales Executive<select value={executive} onChange={(event) => setExecutive(event.target.value)}><option>Aliya</option><option>Keerthi</option></select></label><button type="button" className="table-action" onClick={sendOtp} disabled={!/^\d{12}$/.test(aadhaar) || !/^\d{10}$/.test(phone)}>Send OTP</button>{sentOtp && <><input required placeholder="Enter OTP" value={otp} onChange={(event) => setOtp(event.target.value.replace(/\D/g, '').slice(0, 6))} /><button type="button" className="table-action" onClick={() => setOtpVerified(otp === sentOtp)}>{otp === sentOtp ? 'OTP Verified' : 'Verify OTP'}</button></>}<button className="crm-primary" disabled={!otpVerified}>Create Agent</button></form></div>}</>;
 }
-
-
-
-
-
-
-
 
 
 
