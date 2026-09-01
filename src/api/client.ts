@@ -127,6 +127,11 @@ export const adminAPI = {
     if (!response.ok) { const error = await response.json(); throw new Error(error.error || 'Failed to save customer'); }
     return response.json();
   },
+  updateBookingStatus: async (credentials: AdminCredentials, id: string, active: boolean) => {
+    const response = await request(`/admin/bookings/${encodeURIComponent(id)}/status`, { method: 'PATCH', headers: adminHeaders(credentials), body: JSON.stringify({ active }) });
+    if (!response.ok) { const error = await response.json(); throw new Error(error.error || 'Failed to update booking status'); }
+    return response.json();
+  },
   sendOtp: async (credentials: AdminCredentials, email: string) => {
     const response = await request('/admin/send-otp', { method: 'POST', headers: adminHeaders(credentials), body: JSON.stringify({ email }) });
     if (!response.ok) { const error = await response.json(); throw new Error(error.error || 'Failed to send OTP'); }

@@ -251,7 +251,7 @@ body:after{display:none}
     setBookingSuccess('');
     const form = new FormData(event.currentTarget);
     const booking = {
-      id: `TM-${24082 + bookings.length}`,
+      ...(editingBooking ? { id: editingBooking.id } : {}),
       customer: String(form.get('customer')),
       route: String(form.get('destination')),
       date: String(form.get('date')),
@@ -261,15 +261,18 @@ body:after{display:none}
       adults: Number(form.get('adults') || 0),
       kids: Number(form.get('kids') || 0),
       executive: String(form.get('executive')),
-      active: true,
+      active: editingBooking?.active ?? true,
       paymentMode: String(form.get('paymentMode') || 'BANK TRANSFER'),
       remarks: String(form.get('remarks') || '')
     };
 
     try {
       const saved = await adminAPI.saveBooking(credentials, booking);
-      setBookings((items) => [saved, ...items]);
+      setBookings((items) => editingBooking
+        ? items.map((item) => item.id === saved.id ? saved : item)
+        : [saved, ...items]);
       setShowBooking(false);
+      setEditingBooking(null);
       setBookingSuccess('Booking created successfully!');
       setTimeout(() => setBookingSuccess(''), 3000);
       event.currentTarget.reset();
@@ -302,7 +305,7 @@ return <section className="crm-page" onClick={(event) => { const target = event.
     {view === 'rewards' && <AgentRewards bookings={bookings} rewards={rewards} credentials={credentials} onIssued={(reward) => setRewards((items) => [reward, ...items])} />}
     {view === 'agents' && <AgentManagement credentials={credentials} />}
     <div className="crm-topbar"><div><p className="section-kicker">Travelmithra operations</p><h2>{view === 'bookings' ? 'Bookings' : view === 'customers' ? 'Customers' : 'Sales reports'}</h2><p className="crm-subtitle">Manage your travel business with clarity.</p></div><div className="crm-user"><span className="crm-avatar">A</span><span><strong>Admin</strong><small>Operations</small></span><span>⌄</span></div></div>
-    {view === 'bookings' && <><div className="crm-toolbar"><div><h2>Bookings Management</h2><p>Manage all bookings here</p></div><button className="crm-primary" onClick={() => setShowBooking(true)}>＋ Create Booking</button></div><div className="crm-filters booking-filters"><input placeholder="Search destination/customer" value={query} onChange={(e) => setQuery(e.target.value)} /><select><option>All Customers</option></select><select><option>All Payment Status</option></select><select><option>All Booking Status</option></select><input type="date" /><input type="date" /></div><BookingTable bookings={filteredBookings} onToggle={(id) => setBookings(bookings.map((b) => b.id === id ? { ...b, active: !b.active } : b))} onDownload={downloadReceipt} onDelete={async (id) => { if (!window.confirm('Delete this booking?')) return; await adminAPI.deleteBooking(credentials, id); setBookings((items) => items.filter((b) => b.id !== id)); }} /></>}
+    {view === 'bookings' && <><div className="crm-toolbar"><div><h2>Bookings Management</h2><p>Manage all bookings here</p></div><button className="crm-primary" onClick={() => setShowBooking(true)}>＋ Create Booking</button></div><div className="crm-filters booking-filters"><input placeholder="Search destination/customer" value={query} onChange={(e) => setQuery(e.target.value)} /><select><option>All Customers</option></select><select><option>All Payment Status</option></select><select><option>All Booking Status</option></select><input type="date" /><input type="date" /></div><BookingTable bookings={filteredBookings} onToggle={async (id) => { const booking = bookings.find((b) => b.id === id); if (!booking) return; try { const saved = await adminAPI.updateBookingStatus(credentials, id, !booking.active); setBookings((items) => items.map((b) => b.id === id ? saved : b)); } catch (error) { setBookingError(error instanceof Error ? error.message : 'Failed to update booking status'); } }} onDownload={downloadReceipt} onDelete={async (id) => { if (!window.confirm('Delete this booking?')) return; await adminAPI.deleteBooking(credentials, id); setBookings((items) => items.filter((b) => b.id !== id)); }} /></>}
     {view === 'customers' && <><div className="crm-toolbar"><div><h2>Customers Management</h2><p>Manage all customer details here</p></div><button className="crm-primary" onClick={() => { setEditingCustomer(null); setShowCustomer(true); }}>＋ Create Customer</button></div><div className="crm-table-wrap customer-table-wrap"><table className="crm-table"><thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Actions</th></tr></thead><tbody>{customers.map((c) => <tr key={c.email}><td>{c.name}</td><td>{c.email}</td><td>{c.phone}</td><td><span className={`status-pill ${c.active ? 'active' : 'inactive'}`}>{c.active ? 'Active' : 'Inactive'}</span></td><td><button className="table-action" onClick={() => { setEditingCustomer(c); setShowCustomer(true); }}>Edit</button><button className="table-action" onClick={() => setCustomers(customers.map((item) => item.email === c.email ? { ...item, active: !item.active } : item))}>{c.active ? 'Inactive' : 'Active'}</button></td></tr>)}</tbody></table>{customers.length === 0 && <p className="empty-state">No customers yet.</p>}</div></>}
     {view === 'reports' && <><div className="report-hero"><div><p className="section-kicker">Performance overview</p><h3>Sales report</h3><p>Travelmithra Holidays • India</p><p>Analyze bookings, paid amounts, and traveler totals by date range.</p></div><img src={travelMithraLogoAsset} alt="Travelmithra logo" className="report-logo" /><button className="crm-primary" onClick={downloadReport}>⇩ Download PDF</button></div><div className="report-filters"><label>Sales executive<select value={executive} onChange={(e) => setExecutive(e.target.value)}>{executives.map((e) => <option key={e}>{e}</option>)}</select></label><label>From<input type="date" value={from} onChange={(e) => setFrom(e.target.value)} /></label><label>To<input type="date" value={to} onChange={(e) => setTo(e.target.value)} /></label></div><div className="report-stats"><div><span>Total paid amount</span><strong>{money(totalPaid)}</strong></div><div><span>Total bookings</span><strong>{reportBookings.length}</strong></div><div><span>Total travelers</span><strong>{totalTravelers}</strong></div><div className="report-card"><h3>Monthly sales report <small>{from} — {to}</small></h3><BookingTable bookings={reportBookings} onToggle={() => undefined} onDownload={downloadReceipt} /></div></div></>}
     {showCustomer && <div className="modal-backdrop"><form className="crm-modal" onSubmit={saveCustomer}><button type="button" className="modal-close" onClick={() => { setShowCustomer(false); setEditingCustomer(null); }}>×</button><h3>{editingCustomer ? 'Edit Customer' : 'Create Customer'}</h3><input name="name" required defaultValue={editingCustomer?.name} placeholder="Enter customer name" /><input name="email" type="email" required defaultValue={editingCustomer?.email} placeholder="Enter email" /><input name="phone" required defaultValue={editingCustomer?.phone} placeholder="Enter phone number" /><input name="password" type="password" required={!editingCustomer} placeholder={editingCustomer ? 'Leave blank to keep password' : 'Enter password'} /><button className="crm-primary">{editingCustomer ? 'Save Changes' : 'Create Customer'}</button></form></div>}
