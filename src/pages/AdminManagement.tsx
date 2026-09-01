@@ -21,6 +21,19 @@ const seedCustomers: Customer[] = [
 
 const money = (value: number) => `₹${value.toLocaleString('en-IN')}`;
 
+const PAGE_SIZE = 10;
+function Pagination({ page, total, onChange }: { page: number; total: number; onChange: (page: number) => void }) {
+  const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  if (total <= PAGE_SIZE) return null;
+  return <div className="crm-pagination"><button className="table-action" disabled={page === 1} onClick={() => onChange(page - 1)}>Previous</button><span>Page {page} of {pages}</span><button className="table-action" disabled={page === pages} onClick={() => onChange(page + 1)}>Next</button></div>;
+}
+function usePaged<T>(items: T[]) {
+  const [page, setPage] = useState(1);
+  const pages = Math.max(1, Math.ceil(items.length / PAGE_SIZE));
+  useEffect(() => setPage((current) => Math.min(current, pages)), [pages]);
+  return { page, setPage, items: items.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE), total: items.length };
+}
+
 export default function AdminManagement({ credentials }: { credentials: AdminCredentials }) {
   const location = useLocation();
   const view = location.pathname === '/customers' ? 'customers' : location.pathname === '/reports' ? 'reports' : location.pathname === '/rewards' ? 'rewards' : location.pathname === '/agents' ? 'agents' : 'bookings';
@@ -43,6 +56,7 @@ export default function AdminManagement({ credentials }: { credentials: AdminCre
   const [formPrevious, setFormPrevious] = useState(0);
   const [bookingError, setBookingError] = useState('');
   const [bookingSuccess, setBookingSuccess] = useState('');
+  const customerPage = usePaged(customers);
   useEffect(() => { if (!editingBooking || !showBooking) return; requestAnimationFrame(() => { const heading = document.querySelector('.booking-modal h3'); if (heading) heading.textContent = 'Update Booking'; const set = (name: string, value: string) => { const input = document.querySelector(`[name="${name}"]`) as HTMLInputElement | HTMLSelectElement | null; if (input) input.value = value; }; set('customer', editingBooking.customer); set('destination', editingBooking.route); set('date', editingBooking.date); set('adults', String(editingBooking.adults)); set('kids', String(editingBooking.kids)); set('amount', String(editingBooking.amount)); set('received', String(editingBooking.received)); set('previous', String(editingBooking.previous)); set('paymentMode', editingBooking.paymentMode); set('executive', editingBooking.executive); set('remarks', editingBooking.remarks); }); }, [editingBooking, showBooking]);
 
   const filteredBookings = useMemo(() => bookings.filter((b) => (executive === 'All sales executives' || b.executive === executive) && (!query || `${b.customer} ${b.id} ${b.route}`.toLowerCase().includes(query.toLowerCase()))), [bookings, executive, query]);
@@ -76,22 +90,24 @@ export default function AdminManagement({ credentials }: { credentials: AdminCre
 <html>
 <head><meta charset="UTF-8"><title>Receipt - ${booking.customer}</title>
 <style>
-@page{size:11.5in 5.5in;margin:0}
+@page{size:11.5in 5.5in landscape;margin:0}
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:Arial,sans-serif;font-size:14px;color:#111;padding:24px;line-height:1.2;margin:0;min-height:100vh;overflow:hidden;position:relative}
-body:before{content:'';position:fixed;top:18px;left:18px;width:calc(100vw - 36px);height:calc(100vh - 36px);border:3px solid #111;box-sizing:border-box;pointer-events:none;z-index:50}
+html,body{width:1100px;height:520px}
+body{font-family:Arial,sans-serif;font-size:14px;color:#111;padding:24px;line-height:1.2;margin:0;overflow:hidden;position:relative}
+body:before{content:'';position:fixed;top:18px;left:18px;width:calc(100vw - 36px);height:400px;border:3px solid #111;box-sizing:border-box;pointer-events:none;z-index:50}
 body:after{display:none}
 .logo{position:absolute;left:10%;top:14%;width:29%;text-align:center;z-index:3}.logo img{width:250px;max-width:100%;height:auto;display:block;margin:0 auto}
-.company{position:absolute;right:4%;top:7%;width:49%;border:2px dotted #333;padding:11px 14px;font-family:Georgia,serif}.company h1{font-size:18px;font-weight:500;margin-bottom:5px}.company p{font-size:16px;font-weight:400;margin-bottom:3px}
+.company{position:absolute;right:4%;top:7%;width:49%;border:2px dotted #333;padding:11px 14px;font-family:Georgia,serif}.company h1{font-size:18px;font-weight:700;margin-bottom:5px}.company p{font-size:16px;font-weight:700;margin-bottom:3px}
 .receipt-title{position:absolute;right:24%;top:26%;font-size:24px;font-weight:500;text-decoration:underline}
-.info-line{position:absolute;right:4%;top:34%;width:49%;border:2px dotted #333;padding:12px;display:flex;justify-content:space-between;font-family:Georgia,serif;font-size:14px}.info-line strong{font-style:italic;font-weight:400}
-.received-wrap,.details-left,.details-right{position:absolute}.received-wrap{left:3.5%;top:52%;width:37%}.received-wrap .label,.received-wrap .amount{display:none}
-.details-left{left:3.5%;top:52%;width:37%}.details-right{right:4%;top:53%;width:37%}
-.detail-item{display:grid;grid-template-columns:46% 54%;min-height:31px;border:2px dotted #444;border-bottom:0}.detail-item:last-child{border-bottom:2px solid #111}.detail-item .label{padding:6px 9px;font-family:Georgia,serif;font-weight:400;font-style:italic}.detail-item .value{padding:6px 9px;border-left:2px solid #111}.details-left .detail-item:first-child,.details-left .detail-item:nth-child(4),.details-left .detail-item:nth-child(5),.details-right .detail-item:nth-child(4){border-color:#111}.details-left .detail-item:first-child .label,.details-left .detail-item:nth-child(4) .label,.details-left .detail-item:nth-child(5) .label,.details-right .detail-item:nth-child(4) .label{font-style:italic}
-.thankyou{position:fixed;left:50%;top:57%;width:120px;height:auto;transform:translateX(-50%);z-index:20;object-fit:contain;print-color-adjust:exact;-webkit-print-color-adjust:exact}
+.info-line{position:absolute;right:4%;top:34%;width:49%;border:2px dotted #333;padding:12px;display:flex;justify-content:space-between;font-family:Georgia,serif;font-size:14px}.info-line strong{font-style:italic;font-weight:700}
+.received-wrap,.details-left,.details-right{position:absolute}.received-wrap{left:3.5%;top:46%;width:37%}.received-wrap .label,.received-wrap .amount{display:none}
+.details-left{left:3.5%;top:46%;width:37%}.details-right{right:4%;top:46%;width:37%}
+.details-left,.details-right{z-index:2}
+.detail-item{display:grid;grid-template-columns:46% 54%;min-height:31px;border:2px dotted #444;border-bottom:0}.detail-item:last-child{border-bottom:2px solid #111}.detail-item .label{padding:6px 9px;font-family:Georgia,serif;font-weight:700;font-style:italic}.detail-item .value{padding:6px 9px;border-left:2px solid #111;font-weight:400}.details-left .detail-item:first-child,.details-left .detail-item:nth-child(4),.details-left .detail-item:nth-child(5),.details-right .detail-item:nth-child(4){border-color:#111}.details-left .detail-item:first-child .label,.details-left .detail-item:nth-child(4) .label,.details-left .detail-item:nth-child(5) .label,.details-right .detail-item:nth-child(4) .label{font-style:italic}
+.thankyou{position:absolute;left:50%;top:61%;width:140px;height:auto;transform:translate(-50%, -50%);z-index:1;object-fit:contain;print-color-adjust:exact;-webkit-print-color-adjust:exact}
 .thankyou svg{display:block;width:100%;height:100%}.thankyou .stamp-bg{fill:#a9ddf2;stroke:#4b4b4b;stroke-width:2}.thankyou .stamp-ring{fill:none;stroke:#4b4b4b;stroke-width:1.5}.thankyou .stamp-dash{fill:none;stroke:#4b6cc4;stroke-width:1.2;stroke-dasharray:3 3}.thankyou text{font-family:Arial,sans-serif;font-weight:800;fill:#111;letter-spacing:3px}.thankyou .stamp-side{font-size:7px;font-weight:400;letter-spacing:2px}.thankyou .stamp-heart{fill:#f26b2e}.thankyou .stamp-map{fill:#e79b67;opacity:.9}.thankyou .stamp-hand{fill:#e5a475;stroke:#946744;stroke-width:.7}.thankyou .stamp-cuff{fill:#375d8d}
 .footer{position:absolute;left:0;right:0;bottom:7%;text-align:center;font-size:13px}.footer p{margin-bottom:5px}
-@media print{html,body{width:100%;height:100%;margin:0}body{padding:24px;min-height:100vh}}
+@media print{html,body{width:1100px;height:520px;margin:0}body{padding:24px}}
 </style></head>
 <body>
 <div class="logo">
@@ -173,7 +189,7 @@ body:after{display:none}
   <div class="label">Previous Payments</div>
   <div class="value">${money(booking.previous)}/-</div>
 </div>
-<div class="detail-item"><div class="label"></div><div class="value">${booking.remarks || '—'}</div></div>
+<div class="detail-item"><div class="label">Remarks if any</div><div class="value">${booking.remarks || '—'}</div></div>
 </div>
 <div class="footer">
   <p>Note : This is a computer generated document hence doesn't require any signature/stamp.</p>
@@ -284,7 +300,7 @@ body:after{display:none}
 
 return <section className="crm-page" onClick={(event) => { const target = event.target as HTMLElement; if (target.tagName === 'BUTTON' && target.textContent?.trim() === 'Edit') { const row = target.closest('tr'); const rowText = row?.textContent || ''; const selected = bookings.find((booking) => rowText.includes(booking.customer) && rowText.includes(booking.route)); if (selected) { setEditingBooking(selected); setShowBooking(true); } } }}>
     {view === 'rewards' && <AgentRewards bookings={bookings} rewards={rewards} credentials={credentials} onIssued={(reward) => setRewards((items) => [reward, ...items])} />}
-    {view === 'agents' && <AgentManagement />}
+    {view === 'agents' && <AgentManagement credentials={credentials} />}
     <div className="crm-topbar"><div><p className="section-kicker">Travelmithra operations</p><h2>{view === 'bookings' ? 'Bookings' : view === 'customers' ? 'Customers' : 'Sales reports'}</h2><p className="crm-subtitle">Manage your travel business with clarity.</p></div><div className="crm-user"><span className="crm-avatar">A</span><span><strong>Admin</strong><small>Operations</small></span><span>⌄</span></div></div>
     {view === 'bookings' && <><div className="crm-toolbar"><div><h2>Bookings Management</h2><p>Manage all bookings here</p></div><button className="crm-primary" onClick={() => setShowBooking(true)}>＋ Create Booking</button></div><div className="crm-filters booking-filters"><input placeholder="Search destination/customer" value={query} onChange={(e) => setQuery(e.target.value)} /><select><option>All Customers</option></select><select><option>All Payment Status</option></select><select><option>All Booking Status</option></select><input type="date" /><input type="date" /></div><BookingTable bookings={filteredBookings} onToggle={(id) => setBookings(bookings.map((b) => b.id === id ? { ...b, active: !b.active } : b))} onDownload={downloadReceipt} onDelete={async (id) => { if (!window.confirm('Delete this booking?')) return; await adminAPI.deleteBooking(credentials, id); setBookings((items) => items.filter((b) => b.id !== id)); }} /></>}
     {view === 'customers' && <><div className="crm-toolbar"><div><h2>Customers Management</h2><p>Manage all customer details here</p></div><button className="crm-primary" onClick={() => { setEditingCustomer(null); setShowCustomer(true); }}>＋ Create Customer</button></div><div className="crm-table-wrap customer-table-wrap"><table className="crm-table"><thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Actions</th></tr></thead><tbody>{customers.map((c) => <tr key={c.email}><td>{c.name}</td><td>{c.email}</td><td>{c.phone}</td><td><span className={`status-pill ${c.active ? 'active' : 'inactive'}`}>{c.active ? 'Active' : 'Inactive'}</span></td><td><button className="table-action" onClick={() => { setEditingCustomer(c); setShowCustomer(true); }}>Edit</button><button className="table-action" onClick={() => setCustomers(customers.map((item) => item.email === c.email ? { ...item, active: !item.active } : item))}>{c.active ? 'Inactive' : 'Active'}</button></td></tr>)}</tbody></table>{customers.length === 0 && <p className="empty-state">No customers yet.</p>}</div></>}
@@ -294,7 +310,7 @@ return <section className="crm-page" onClick={(event) => { const target = event.
   </section>;
 }
 
-function BookingTable({ bookings, onToggle, onDownload, onDelete }: { bookings: Booking[]; onToggle: (id: string) => void; onDownload?: (booking: Booking) => void; onDelete?: (id: string) => void }) { return <div className="crm-table-wrap"><table className="crm-table"><thead><tr><th>Destination / Customer</th><th>Trip Date</th><th>Members</th><th>Total Travelers</th><th>Amount</th><th>Payment</th><th>Booking</th><th>Status</th><th>Actions</th></tr></thead><tbody>{bookings.map((b) => <tr key={b.id}><td><strong>{b.route}</strong><small className="table-sub">{b.customer}</small></td><td>{b.date}</td><td>{b.adults} Adult + {b.kids} Kid</td><td><strong>{Number(b.adults || 0) + Number(b.kids || 0)}</strong></td><td><strong>{money(b.amount)}</strong></td><td>Partial</td><td>{b.remarks || '—'}</td><td><span className={`status-pill ${b.active ? 'active' : 'inactive'}`}>{b.active ? 'Confirmed' : 'Inactive'}</span></td><td><div className="booking-actions"><button className="table-action">Edit</button><button className="table-action download-btn" onClick={() => onDownload?.(b)}>Download receipt</button><button className="table-action" onClick={() => onToggle(b.id)}>{b.active ? 'Inactive' : 'Active'}</button>{onDelete && <button className="table-action danger" onClick={() => onDelete(b.id)}>Delete</button>}</div></td></tr>)}</tbody></table>{bookings.length === 0 && <p className="empty-state">No bookings match this filter.</p>}</div>; }
+function BookingTable({ bookings, onToggle, onDownload, onDelete }: { bookings: Booking[]; onToggle: (id: string) => void; onDownload?: (booking: Booking) => void; onDelete?: (id: string) => void }) { const paged = usePaged(bookings); return <><div className="crm-table-wrap"><table className="crm-table"><thead><tr><th>Destination / Customer</th><th>Trip Date</th><th>Members</th><th>Total Travelers</th><th>Amount</th><th>Payment</th><th>Booking</th><th>Status</th><th>Actions</th></tr></thead><tbody>{paged.items.map((b) => <tr key={b.id}><td><strong>{b.route}</strong><small className="table-sub">{b.customer}</small></td><td>{b.date}</td><td>{b.adults} Adult + {b.kids} Kid</td><td><strong>{Number(b.adults || 0) + Number(b.kids || 0)}</strong></td><td><strong>{money(b.amount)}</strong></td><td>Partial</td><td>{b.remarks || '—'}</td><td><span className={`status-pill ${b.active ? 'active' : 'inactive'}`}>{b.active ? 'Confirmed' : 'Inactive'}</span></td><td><div className="booking-actions"><button className="table-action">Edit</button><button className="table-action download-btn" onClick={() => onDownload?.(b)}>Download receipt</button><button className="table-action" onClick={() => onToggle(b.id)}>{b.active ? 'Inactive' : 'Active'}</button>{onDelete && <button className="table-action danger" onClick={() => onDelete(b.id)}>Delete</button>}</div></td></tr>)}</tbody></table>{bookings.length === 0 && <p className="empty-state">No bookings match this filter.</p>}</div><Pagination page={paged.page} total={paged.total} onChange={paged.setPage} /></>; }
 
 function AgentRewards({ bookings, rewards, credentials, onIssued }: { bookings: Booking[]; rewards: Reward[]; credentials: AdminCredentials; onIssued: (reward: Reward) => void }) {
   const agentNames: string[] = [];
@@ -309,18 +325,20 @@ function AgentRewards({ bookings, rewards, credentials, onIssued }: { bookings: 
   return <><div className="crm-toolbar"><div><h2>Agent Rewards</h2><p>Issued rewards are shown separately from the active reward session.</p></div><button type="button" className="crm-primary" onClick={() => setShowIssue(true)}>＋ Issue Reward</button></div><h3>Current Reward Session</h3><div className="crm-table-wrap rewards-table-wrap"><table className="crm-table"><thead><tr><th>Agent</th><th>Traveler</th><th>Booking</th><th>Reward</th><th>Status</th><th>Actions</th></tr></thead><tbody>{rows(sessionRewards, true)}</tbody></table>{sessionRewards.length === 0 && <p className="empty-state">No rewards in the current session.</p>}</div><div className="crm-toolbar"><div><h3>Monthly Issued Agent Rewards</h3><p>Historical issued rewards for the selected month.</p></div><input type="month" value={month} onChange={(event) => setMonth(event.target.value)} /></div><div className="crm-table-wrap rewards-table-wrap"><table className="crm-table"><thead><tr><th>Agent</th><th>Traveler</th><th>Booking</th><th>Reward</th><th>Status</th></tr></thead><tbody>{rows(monthlyRewards, false)}</tbody></table>{monthlyRewards.length === 0 && <p className="empty-state">No issued rewards for this month.</p>}</div>{showIssue && <div className="modal-backdrop"><form className="crm-modal" onSubmit={issue}><button type="button" className="modal-close" onClick={() => setShowIssue(false)}>×</button><h3>Issue Reward</h3><p className="crm-subtitle">Reward the agent who converted a traveler into a trip.</p>{agents.length ? <label>Agent name<select name="agent" required defaultValue=""><option value="" disabled>Select agent</option>{agents.map((agent) => <option key={agent.name}>{agent.name}</option>)}</select></label> : <p className="empty-state">Create an agent first before issuing a reward.</p>}<label>Traveler name<input name="traveler" required placeholder="Enter traveler name" /></label><label>Booking ID<input name="bookingId" placeholder="Optional booking ID" /></label><label>Reward amount<input name="amount" required type="number" min="1" placeholder="Enter reward amount" /></label><label>Note<input name="note" placeholder="Optional note" /></label><button className="crm-primary" disabled={!agents.length}>Issue Reward</button></form></div>}</>;
 }
 
-function AgentManagement() {
+function AgentManagement({ credentials }: { credentials: AdminCredentials }) {
   const [agents, setAgents] = useState<{ name: string; executive: string; phone: string; aadhaar: string }[]>([]);
   const [showCreate, setShowCreate] = useState(false);
   const [executive, setExecutive] = useState('Aliya');
   const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [aadhaar, setAadhaar] = useState('');
   const [otp, setOtp] = useState('');
   const [sentOtp, setSentOtp] = useState('');
   const [otpVerified, setOtpVerified] = useState(false);
   useEffect(() => { const saved = JSON.parse(localStorage.getItem(AGENTS_STORAGE_KEY) || '[]'); setAgents(saved); }, []);
-  const sendOtp = () => { if (!/^\d{12}$/.test(aadhaar) || !/^\d{10}$/.test(phone)) return; const code = String(Math.floor(100000 + Math.random() * 900000)); setSentOtp(code); setOtp(''); setOtpVerified(false); window.alert(`OTP sent to mobile number ending ${phone.slice(-4)}. Demo OTP: ${code}`); };
+  useEffect(() => { if (sentOtp && otp.length === 6) { adminAPI.verifyOtp(credentials, sentOtp, otp).then(() => setOtpVerified(true)).catch(() => setOtpVerified(false)); } }, [credentials, otp, sentOtp]);
+  const sendOtp = async () => { const targetEmail = email || window.prompt('Enter the agent email address')?.trim() || ''; if (!/^\d{12}$/.test(aadhaar) || !/^\d{10}$/.test(phone) || !/^\S+@\S+\.\S+$/.test(targetEmail)) return; setEmail(targetEmail); try { await adminAPI.sendOtp(credentials, targetEmail); setSentOtp(targetEmail); setOtp(''); setOtpVerified(false); window.alert('Verification OTP sent to the agent email address.'); } catch (error) { window.alert(error instanceof Error ? error.message : 'Failed to send OTP'); } };
   const addAgent = (event: React.FormEvent) => { event.preventDefault(); if (!/^\d{12}$/.test(aadhaar) || !/^\d{10}$/.test(phone) || !sentOtp || otp !== sentOtp || !otpVerified) return; const updated = [...agents, { name, executive, phone, aadhaar }]; setAgents(updated); localStorage.setItem(AGENTS_STORAGE_KEY, JSON.stringify(updated)); setName(''); setPhone(''); setAadhaar(''); setOtp(''); setSentOtp(''); setOtpVerified(false); setShowCreate(false); };
   return <><div className="crm-toolbar"><div><h2>Agent Management</h2><p>Manage agents under each Sales Executive.</p></div><button type="button" className="crm-primary" onClick={() => setShowCreate(true)}>＋ Create Agent</button></div><div className="crm-table-wrap"><table className="crm-table"><thead><tr><th>Agent Name</th><th>Sales Executive</th><th>Mobile</th><th>Aadhaar</th><th>Reward Status</th><th>Actions</th></tr></thead><tbody>{agents.map((agent) => <tr key={`${agent.name}-${agent.phone}`}><td><strong>{agent.name}</strong></td><td>{agent.executive}</td><td>{agent.phone}</td><td>{agent.aadhaar}</td><td>Verified</td><td><button type="button" className="table-action danger" onClick={() => { if (window.confirm(`Delete agent ${agent.name}?`)) setAgents((items) => items.filter((item) => item !== agent)); }}>Delete</button></td></tr>)}</tbody></table>{agents.length === 0 && <p className="empty-state">No agents created yet.</p>}</div>{showCreate && <div className="modal-backdrop"><form className="crm-modal" onSubmit={addAgent}><button type="button" className="modal-close" onClick={() => setShowCreate(false)}>×</button><h3>Create Agent</h3><input required placeholder="Agent name" value={name} onChange={(event) => setName(event.target.value)} /><input required placeholder="10-digit mobile number" value={phone} onChange={(event) => { setPhone(event.target.value.replace(/\D/g, '').slice(0, 10)); setOtpVerified(false); }} /><input required placeholder="12-digit Aadhaar number" value={aadhaar} onChange={(event) => { setAadhaar(event.target.value.replace(/\D/g, '').slice(0, 12)); setOtpVerified(false); }} /><label>Sales Executive<select value={executive} onChange={(event) => setExecutive(event.target.value)}><option>Aliya</option><option>Keerthi</option></select></label><button type="button" className="table-action" onClick={sendOtp} disabled={!/^\d{12}$/.test(aadhaar) || !/^\d{10}$/.test(phone)}>Send OTP</button>{sentOtp && <><input required placeholder="Enter OTP" value={otp} onChange={(event) => setOtp(event.target.value.replace(/\D/g, '').slice(0, 6))} /><button type="button" className="table-action" onClick={() => setOtpVerified(otp === sentOtp)}>{otp === sentOtp ? 'OTP Verified' : 'Verify OTP'}</button></>}<button className="crm-primary" disabled={!otpVerified}>Create Agent</button></form></div>}</>;
 }

@@ -1,4 +1,6 @@
-import { Link } from 'react-router-dom';
+import { useState } from 'react';
+
+type DashboardUser = { role?: string; bookings?: Array<Record<string, unknown>> } | null;
 
 const destinationData = [
   { label: 'Europe', value: 40 },
@@ -24,9 +26,26 @@ const destinationGrandTotal = destinationTotals.reduce((sum, destination) => sum
 
 type DashboardProps = {
   profileName: string;
+  currentUser?: DashboardUser;
 };
 
-export default function Dashboard({ profileName }: DashboardProps) {
+export default function Dashboard({ profileName, currentUser }: DashboardProps) {
+  const [receiptMessage, setReceiptMessage] = useState('');
+  const customerBookings = currentUser?.role === 'customer' ? currentUser.bookings || [] : [];
+  const downloadCustomerReceipt = (booking: Record<string, unknown>) => {
+    const rows = [
+      ['Trip', booking.route], ['Trip date', booking.date], ['Amount', `₹${Number(booking.amount || 0).toLocaleString('en-IN')}`],
+      ['Paid', `₹${Number(booking.received || 0).toLocaleString('en-IN')}`], ['Payment mode', booking.paymentMode || ''],
+    ].map(([label, value]) => `<tr><th>${label}</th><td>${value}</td></tr>`).join('');
+    const win = window.open('', '_blank');
+    if (!win) return;
+    win.document.write(`<html><head><title>Receipt - ${profileName}</title><style>@page{size:A4;margin:20mm}body{font-family:Arial;color:#17202a}h1{color:#1777b9}table{width:100%;border-collapse:collapse;margin-top:24px}th,td{border:1px solid #cbd6e2;padding:12px;text-align:left}th{width:35%;background:#edf4f8}</style></head><body><h1>Travel Mithra Holidays</h1><h2>Approved Receipt</h2><p>Customer: ${profileName}</p><table>${rows}</table><p>Receipt approved by admin.</p></body></html>`);
+    win.document.close(); win.focus(); win.print();
+    setReceiptMessage('Receipt opened for printing or download.');
+  };
+  if (currentUser?.role === 'customer') {
+    return <section className="dashboard" id="dashboard"><div className="dashboard-header"><div><span className="badge">Welcome back, <strong>{profileName}</strong></span><h2>My Trips</h2><p>Only trips approved by the administrator are shown here.</p></div></div><div className="crm-table-wrap"><table className="crm-table"><thead><tr><th>Trip</th><th>Date</th><th>Amount</th><th>Receipt</th></tr></thead><tbody>{customerBookings.map((booking) => <tr key={String(booking.id)}><td><strong>{String(booking.route || '')}</strong></td><td>{String(booking.date || '')}</td><td>₹{Number(booking.amount || 0).toLocaleString('en-IN')}</td><td><button className="table-action download-btn" onClick={() => downloadCustomerReceipt(booking)}>Download receipt</button></td></tr>)}</tbody></table>{customerBookings.length === 0 && <p className="empty-state">No approved trips are available yet.</p>}</div>{receiptMessage && <p>{receiptMessage}</p>}</section>;
+  }
   return (
     <section className="dashboard" id="dashboard">
       <div className="dashboard-header">

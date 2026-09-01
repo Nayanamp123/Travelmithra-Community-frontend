@@ -3162,6 +3162,8 @@ nav a.active {
 .crm-page .crm-table td:last-child { white-space: normal; min-width: 240px; }
 .crm-page .table-action { margin: 0 6px 6px 0 !important; white-space: nowrap; display: inline-flex; align-items: center; justify-content: center; }
 .crm-page .booking-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.crm-pagination { display:flex; align-items:center; justify-content:center; gap:16px; margin:18px 0 28px; }
+.crm-pagination .table-action:disabled { opacity:.45; cursor:not-allowed; }
 .crm-page .booking-actions .download-btn { background: #f39b3d !important; color: #fff !important; }
 .crm-page .booking-actions .download-btn:hover { background: #e18a2d !important; }
 

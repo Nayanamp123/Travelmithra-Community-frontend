@@ -23,6 +23,7 @@ type CurrentUser = {
   role?: string;
   referralCode?: string;
   referredBy?: number;
+  bookings?: Array<Record<string, unknown>>;
 };
 
 function App() {
@@ -140,7 +141,7 @@ function AppLayout({
         path="/dashboard"
         element={
           canAccessUserPages ? (
-            <Dashboard profileName={profileName} />
+            <Dashboard profileName={profileName} currentUser={currentUser} />
           ) : (
             <Navigate to="/login" replace />
           )

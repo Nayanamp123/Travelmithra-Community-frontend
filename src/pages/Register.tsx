@@ -1,7 +1,7 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import type { FormEvent } from 'react';
-import { authAPI } from '../api/client';
+import { authAPI, type AdminCredentials } from '../api/client';
 
 type RegisterProps = {
   onRegister: (user: {
@@ -20,7 +20,6 @@ export default function Register({ onRegister }: RegisterProps) {
   const location = useLocation();
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [accountRole, setAccountRole] = useState('traveler');
 
   const referralCodeFromLink =
     new URLSearchParams(location.search).get('ref') ||
@@ -36,7 +35,10 @@ export default function Register({ onRegister }: RegisterProps) {
     const name = (form.elements.namedItem('registerName') as HTMLInputElement).value || 'Traveler';
     const email = (form.elements.namedItem('registerEmail') as HTMLInputElement).value;
     const password = (form.elements.namedItem('registerPassword') as HTMLInputElement).value;
-    const role = (form.elements.namedItem('registerRole') as HTMLSelectElement).value;
+    const adminUsername = (form.elements.namedItem('adminUsername') as HTMLInputElement).value.trim();
+    const adminPassword = (form.elements.namedItem('adminPassword') as HTMLInputElement).value;
+    const credentials: AdminCredentials = { username: adminUsername, password: adminPassword };
+    const role = 'traveler';
     const salesExecutive = (form.elements.namedItem('salesExecutive') as HTMLSelectElement)?.value || undefined;
     const referralCodeOrLink = (form.elements.namedItem('registerReferral') as HTMLInputElement).value.trim();
     const fileInput = form.elements.namedItem('registerAvatar') as HTMLInputElement;
@@ -54,7 +56,7 @@ export default function Register({ onRegister }: RegisterProps) {
       const avatar = typeof reader.result === 'string' ? reader.result : undefined;
 
       try {
-        const response = await authAPI.register(name, email, password, referralCodeOrLink || undefined, role, salesExecutive);
+        const response = await authAPI.register(name, email, password, referralCodeOrLink || undefined, role, salesExecutive, credentials);
         onRegister(response.user);
         navigate('/dashboard');
       } catch (err) {
@@ -72,7 +74,7 @@ export default function Register({ onRegister }: RegisterProps) {
       reader.readAsDataURL(file);
     } else {
       try {
-        const response = await authAPI.register(name, email, password, referralCodeOrLink || undefined, role, salesExecutive);
+        const response = await authAPI.register(name, email, password, referralCodeOrLink || undefined, role, salesExecutive, credentials);
         onRegister(response.user);
         navigate('/dashboard');
       } catch (err) {
@@ -85,9 +87,9 @@ export default function Register({ onRegister }: RegisterProps) {
   return (
     <section className="auth-page">
       <div className="card auth-card">
-        <p className="section-kicker">Join the community</p>
+        <p className="section-kicker">Admin-authorized registration</p>
         <h3>Create your account</h3>
-        <p className="auth-copy">Save your profile and connect with other travelers in one place.</p>
+        <p className="auth-copy">Enter the registration credentials provided by the administrator.</p>
         {error && <div className="error-message">{error}</div>}
 
         <form onSubmit={handleSubmit}>
@@ -100,21 +102,13 @@ export default function Register({ onRegister }: RegisterProps) {
           <label htmlFor="registerPassword">Password</label>
           <input id="registerPassword" name="registerPassword" type="password" placeholder="Enter password" required />
 
-          <label htmlFor="registerRole">Account type</label>
-          <select id="registerRole" name="registerRole" value={accountRole} onChange={(event) => setAccountRole(event.target.value)}>
-            <option value="traveler">Traveler</option>
-            <option value="admin">Admin</option>
-            <option value="agent">Agent</option>
-            <option value="sales_executive">Sales Executive</option>
-          </select>
+          <label htmlFor="adminUsername">Admin username</label>
+          <input id="adminUsername" name="adminUsername" type="text" placeholder="Username provided by admin" required />
 
-          {accountRole === 'sales_executive' && <>
-            <label htmlFor="salesExecutive">Sales Executive</label>
-            <select id="salesExecutive" name="salesExecutive" defaultValue="Aliya">
-              <option value="Aliya">Aliya</option>
-              <option value="Keerthi">Keerthi</option>
-            </select>
-          </>}
+          <label htmlFor="adminPassword">Admin password</label>
+          <input id="adminPassword" name="adminPassword" type="password" placeholder="Password provided by admin" required />
+
+          <input type="hidden" name="registerRole" value="traveler" />
 
           <label htmlFor="registerReferral">Referral code or link (optional)</label>
           <input

@@ -44,11 +44,12 @@ export type AdminCredentials = {
 // ===== USER AUTHENTICATION API =====
 
 export const authAPI = {
-  register: async (name: string, email: string, password: string, referralCode?: string, role?: string, salesExecutive?: string) => {
+  register: async (name: string, email: string, password: string, referralCode?: string, role?: string, salesExecutive?: string, credentials?: AdminCredentials) => {
     const response = await request(`${API_BASE_URL}/auth/register`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        ...(credentials ? adminHeaders(credentials) : {}),
       },
       body: JSON.stringify({ name, email, password, referralCode, role, salesExecutive }),
     });
@@ -124,6 +125,16 @@ export const adminAPI = {
   createCustomer: async (credentials: AdminCredentials, customer: Record<string, unknown>) => {
     const response = await request('/admin/customers', { method: 'POST', headers: adminHeaders(credentials), body: JSON.stringify(customer) });
     if (!response.ok) { const error = await response.json(); throw new Error(error.error || 'Failed to save customer'); }
+    return response.json();
+  },
+  sendOtp: async (credentials: AdminCredentials, email: string) => {
+    const response = await request('/admin/send-otp', { method: 'POST', headers: adminHeaders(credentials), body: JSON.stringify({ email }) });
+    if (!response.ok) { const error = await response.json(); throw new Error(error.error || 'Failed to send OTP'); }
+    return response.json();
+  },
+  verifyOtp: async (credentials: AdminCredentials, email: string, otp: string) => {
+    const response = await request('/admin/verify-otp', { method: 'POST', headers: adminHeaders(credentials), body: JSON.stringify({ email, otp }) });
+    if (!response.ok) { const error = await response.json(); throw new Error(error.error || 'Invalid OTP'); }
     return response.json();
   },
   login: async (username: string, password: string) => {

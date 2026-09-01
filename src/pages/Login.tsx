@@ -79,9 +79,9 @@ export default function Login({
           password
         );
 
-        const { user } = response;
+        const { user, bookings } = response;
 
-        onLogin(user);
+        onLogin({ ...user, bookings } as typeof user);
 
         navigate('/dashboard');
       } catch {
@@ -256,15 +256,15 @@ export default function Login({
           >
             {mode === 'admin'
               ? 'Admin username'
-              : 'Email address'}
+              : 'Email or customer name'}
           </label>
 
           <input
             id="loginEmail"
             name="loginEmail"
             type="text"
-            placeholder=""
-            defaultValue="admin"
+            placeholder={mode === 'admin' ? 'admin' : 'Email or customer name'}
+            defaultValue={mode === 'admin' ? 'admin' : ''}
             required
             style={{
               width: '100%',
