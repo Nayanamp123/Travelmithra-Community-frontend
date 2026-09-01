@@ -30,7 +30,9 @@ function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [profileName, setProfileName] = useState('Traveler');
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
-  const [adminCredentials, setAdminCredentials] = useState<AdminCredentials | null>(null);
+  const [adminCredentials, setAdminCredentials] = useState<AdminCredentials | null>(() => {
+    try { return JSON.parse(sessionStorage.getItem('travelmithra-admin-session') || 'null'); } catch { return null; }
+  });
 
   const handleAuthSuccess = (user: CurrentUser) => {
     setProfileName(user.name);
@@ -54,6 +56,7 @@ function App() {
     };
 
     setAdminCredentials(credentials);
+    sessionStorage.setItem('travelmithra-admin-session', JSON.stringify(credentials));
     setIsAuthenticated(true);
     setProfileName(adminUser.name);
     setCurrentUser(adminUser);
@@ -72,6 +75,7 @@ function App() {
     setProfileName('Traveler');
     setCurrentUser(null);
     setAdminCredentials(null);
+    sessionStorage.removeItem('travelmithra-admin-session');
   };
 
   return (

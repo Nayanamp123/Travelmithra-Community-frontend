@@ -1,9 +1,9 @@
 const API_BASE_URL_CANDIDATES = [
   import.meta.env.VITE_API_BASE_URL,
-  'http://localhost:4002/api',
-].filter(Boolean) as string[];
+  'http://localhost:4000/api',
+].filter(Boolean).map((baseUrl) => baseUrl.replace(/\/$/, '')) as string[];
 
-const API_BASE_URL = API_BASE_URL_CANDIDATES[0] || 'http://localhost:4002/api';
+const API_BASE_URL = API_BASE_URL_CANDIDATES[0] || 'http://localhost:4000/api';
 
 function getCandidateUrls(path: string) {
   const normalizedPath = path.startsWith('/') ? path : `/${path}`;
@@ -20,7 +20,11 @@ async function request(path: string, options?: RequestInit): Promise<Response> {
 
   for (const candidate of candidates) {
     try {
-      const response = await fetch(candidate, options);
+      const response = await fetch(candidate, {
+        ...options,
+        cache: 'no-store',
+        headers: { ...(options?.headers || {}), 'Cache-Control': 'no-cache', Pragma: 'no-cache' },
+      });
       if (response.ok || response.status >= 400) {
         return response;
       }
