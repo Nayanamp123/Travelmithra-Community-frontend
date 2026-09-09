@@ -1,9 +1,16 @@
-const API_BASE_URL_CANDIDATES = [
-  import.meta.env.VITE_API_BASE_URL,
-  'http://localhost:4000/api',
-].filter(Boolean).map((baseUrl) => baseUrl.replace(/\/$/, '')) as string[];
+const configuredApiBaseUrl = import.meta.env.VITE_API_BASE_URL?.trim();
+const developmentApiBaseUrls = import.meta.env.DEV
+  ? ['http://localhost:4000/api', 'http://localhost:4002/api']
+  : [];
 
-const API_BASE_URL = API_BASE_URL_CANDIDATES[0] || 'http://localhost:4000/api';
+// Never send a production request to localhost. Vite replaces these values at
+// build time, so a deployed build must receive VITE_API_BASE_URL from the
+// hosting provider's environment variables.
+const API_BASE_URL_CANDIDATES = [configuredApiBaseUrl, ...developmentApiBaseUrls]
+  .filter(Boolean)
+  .map((baseUrl) => baseUrl!.replace(/\/$/, '')) as string[];
+
+const API_BASE_URL = API_BASE_URL_CANDIDATES[0];
 
 function getCandidateUrls(path: string) {
   const normalizedPath = path.startsWith('/') ? path : `/${path}`;
@@ -16,6 +23,9 @@ function getCandidateUrls(path: string) {
 
 async function request(path: string, options?: RequestInit): Promise<Response> {
   const candidates = getCandidateUrls(path);
+  if (!candidates.length) {
+    throw new Error('The production API URL is not configured. Set VITE_API_BASE_URL in the frontend deployment settings and redeploy.');
+  }
   let lastError: Error | null = null;
 
   for (const candidate of candidates) {
@@ -36,7 +46,7 @@ async function request(path: string, options?: RequestInit): Promise<Response> {
   throw new Error(
     lastError
       ? lastError.message
-      : `Unable to connect to the backend. Start the backend with "npm run dev" from the backend folder. Tried: ${candidates.join(', ')}`
+      : `Unable to connect to the backend. Tried: ${candidates.join(', ')}`
   );
 }
 
@@ -49,7 +59,7 @@ export type AdminCredentials = {
 
 export const authAPI = {
   register: async (name: string, email: string, password: string, referralCode?: string, role?: string, salesExecutive?: string, credentials?: AdminCredentials) => {
-    const response = await request(`${API_BASE_URL}/auth/register`, {
+    const response = await request('/auth/register', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -65,7 +75,7 @@ export const authAPI = {
   },
 
   login: async (email: string, password: string) => {
-    const response = await request(`${API_BASE_URL}/auth/login`, {
+    const response = await request('/auth/login', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

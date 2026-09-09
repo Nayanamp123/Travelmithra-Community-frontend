@@ -84,7 +84,17 @@ export default function Login({
         onLogin({ ...user, bookings } as typeof user);
 
         navigate('/dashboard');
-      } catch {
+      } catch (travelerError) {
+        // Only try the legacy admin credentials when the API responded with
+        // an authentication error. Do not hide network/configuration errors
+        // behind a second request, which used to surface as "Failed to fetch".
+        const isAuthenticationFailure = travelerError instanceof Error &&
+          /invalid|incorrect|not found|unauthorized|credentials|login failed/i.test(travelerError.message);
+
+        if (!isAuthenticationFailure) {
+          throw travelerError;
+        }
+
         // =========================
         // FALLBACK ADMIN LOGIN
         // =========================
