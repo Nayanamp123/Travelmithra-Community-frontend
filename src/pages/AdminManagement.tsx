@@ -94,12 +94,12 @@ export default function AdminManagement({ credentials }: { credentials: AdminCre
 *{margin:0;padding:0;box-sizing:border-box}
 html,body{width:1100px;height:520px}
 body{font-family:Arial,sans-serif;font-size:14px;color:#111;padding:24px;line-height:1.2;margin:0;overflow:hidden;position:relative}
-body:before{content:'';position:fixed;top:18px;left:18px;width:calc(100vw - 36px);height:400px;border:3px solid #111;box-sizing:border-box;pointer-events:none;z-index:50}
+body:before{content:'';position:fixed;top:18px;left:18px;width:1064px;height:484px;border:3px solid #111;box-sizing:border-box;pointer-events:none;z-index:50}
 body:after{display:none}
 .logo{position:absolute;left:10%;top:14%;width:29%;text-align:center;z-index:3}.logo img{width:250px;max-width:100%;height:auto;display:block;margin:0 auto}
 .company{position:absolute;right:4%;top:7%;width:49%;border:2px dotted #333;padding:11px 14px;font-family:Georgia,serif}.company h1{font-size:18px;font-weight:700;margin-bottom:5px}.company p{font-size:16px;font-weight:700;margin-bottom:3px}
-.receipt-title{position:absolute;right:24%;top:26%;font-size:24px;font-weight:500;text-decoration:underline}
-.info-line{position:absolute;right:4%;top:34%;width:49%;border:2px dotted #333;padding:12px;display:flex;justify-content:space-between;font-family:Georgia,serif;font-size:14px}.info-line strong{font-style:italic;font-weight:700}
+.receipt-title{position:absolute;right:24%;top:28%;font-size:24px;line-height:29px;font-weight:500;text-decoration:underline}
+.info-line{position:absolute;right:4%;top:36%;width:49%;border:2px dotted #333;padding:12px;display:flex;justify-content:space-between;font-family:Georgia,serif;font-size:14px}.info-line strong{font-style:italic;font-weight:700}
 .received-wrap,.details-left,.details-right{position:absolute}.received-wrap{left:3.5%;top:46%;width:37%}.received-wrap .label,.received-wrap .amount{display:none}
 .details-left{left:3.5%;top:46%;width:37%}.details-right{right:4%;top:46%;width:37%}
 .details-left,.details-right{z-index:2}
@@ -119,7 +119,7 @@ body:after{display:none}
   <p>Kakkanad, Cochin - 682030</p>
   <p>Kerala, India</p>
 </div>
-<div class="receipt-title">RECEIPT</div>
+<div class="receipt-title" style="font-size: 20px; margin-top: 10px;">RECEIPT</div>
 <div class="info-line">
   <span><strong>Date</strong> :${formatDate(booking.date)}</span>
   <span><strong>Receipt No</strong> :${receiptNo}</span>
