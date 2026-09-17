@@ -39,7 +39,7 @@ export default function Dashboard({ profileName, currentUser }: DashboardProps) 
     ].map(([label, value]) => `<tr><th>${label}</th><td>${value}</td></tr>`).join('');
     const win = window.open('', '_blank');
     if (!win) return;
-    win.document.write(`<html><head><title>Receipt - ${profileName}</title><style>@page{size:A4;margin:20mm}body{font-family:Arial;color:#17202a}h1{color:#1777b9}table{width:100%;border-collapse:collapse;margin-top:24px}th,td{border:1px solid #cbd6e2;padding:12px;text-align:left}th{width:35%;background:#edf4f8}</style></head><body><h1>Travel Mithra Holidays</h1><h2>Approved Receipt</h2><p>Customer: ${profileName}</p><table>${rows}</table><p>Receipt approved by admin.</p></body></html>`);
+    win.document.write(`<html><head><title>Receipt - ${profileName}</title><style>@page{size:A4;margin:20mm}body{font-family:Arial;color:#17202a}h1{color:#1777b9}table{width:100%;border-collapse:collapse;margin-top:24px}th,td{border:1px solid #cbd6e2;padding:12px;text-align:left}th{width:35%;background:#edf4f8}</style></head><body><h1>TRAVEL MITHRA HOLIDAYS</h1><p>Old Civil Station Road, Kunnumpuram<br/>Kakkanad, Cochin - 682030<br/>Kerala, India</p><h2>Approved Receipt</h2><p>Customer: ${profileName}</p><table>${rows}</table><p>Receipt approved by admin.</p></body></html>`);
     win.document.close(); win.focus(); win.print();
     setReceiptMessage('Receipt opened for printing or download.');
   };
