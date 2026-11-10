@@ -1,6 +1,6 @@
 const configuredApiBaseUrl = import.meta.env.VITE_API_BASE_URL?.trim();
 const developmentApiBaseUrls = import.meta.env.DEV
-  ? ['http://localhost:4000/api', 'http://localhost:4002/api']
+  ? [ 'http://localhost:4002/api']
   : [];
 
 // Never send a production request to localhost. Vite replaces these values at
@@ -35,6 +35,13 @@ async function request(path: string, options?: RequestInit): Promise<Response> {
         cache: 'no-store',
         headers: { ...(options?.headers || {}), 'Cache-Control': 'no-cache', Pragma: 'no-cache' },
       });
+      // During local development, an older backend may still be running on
+      // the first fallback port. Continue to the next API when this endpoint
+      // is not available there.
+      if (response.status === 404 || response.status === 405) {
+        lastError = new Error(`Endpoint unavailable at ${candidate}`);
+        continue;
+      }
       if (response.ok || response.status >= 400) {
         return response;
       }
@@ -58,14 +65,13 @@ export type AdminCredentials = {
 // ===== USER AUTHENTICATION API =====
 
 export const authAPI = {
-  register: async (name: string, email: string, password: string, referralCode?: string, role?: string, salesExecutive?: string, credentials?: AdminCredentials) => {
+  register: async (name: string, username: string, phone: string, password: string, avatar?: string, referralCode?: string, termsAccepted = false, consultantId?: string) => {
     const response = await request('/auth/register', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        ...(credentials ? adminHeaders(credentials) : {}),
       },
-      body: JSON.stringify({ name, email, password, referralCode, role, salesExecutive }),
+      body: JSON.stringify({ name, username, phone, password, avatar, referralCode, termsAccepted, consultantId }),
     });
     if (!response.ok) {
       const error = await response.json();
@@ -127,7 +133,7 @@ export const adminAPI = {
     return response.json();
   },
   removeRewardFromSession: async (credentials: AdminCredentials, id: number) => {
-    const response = await request(`/admin/rewards/${id}`, { method: 'PATCH', headers: adminHeaders(credentials), body: JSON.stringify({ status: 'archived' }) });
+    const response = await request(`/admin/rewards/${id}`, { method: 'DELETE', headers: adminHeaders(credentials) });
     if (!response.ok) { const error = await response.json(); throw new Error(error.error || 'Failed to remove reward from session'); }
     return response.json();
   },
@@ -204,6 +210,29 @@ export const adminAPI = {
       const error = await response.json();
       throw new Error(error.error || 'Failed to delete user');
     }
+    return response.json();
+  },
+};
+
+export const agentAPI = {
+  getSales: async (username: string) => {
+    const response = await request('/agent/sales', { headers: { 'x-agent-username': username } });
+    if (!response.ok) throw new Error('Failed to fetch your sales');
+    return response.json();
+  },
+  getRewards: async (username: string) => {
+    const response = await request('/agent/rewards', { headers: { 'x-agent-username': username } });
+    if (!response.ok) throw new Error('Failed to fetch your rewards');
+    return response.json();
+  },
+  deleteReward: async (username: string, rewardId: number) => {
+    const response = await request(`/agent/rewards/${rewardId}`, { method: 'DELETE', headers: { 'x-agent-username': username } });
+    if (!response.ok) { const error = await response.json(); throw new Error(error.error || 'Failed to remove reward'); }
+    return response.json();
+  },
+  createSale: async (username: string, booking: Record<string, unknown>) => {
+    const response = await request('/agent/sales', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-agent-username': username }, body: JSON.stringify(booking) });
+    if (!response.ok) { const error = await response.json(); throw new Error(error.error || 'Failed to add customer booking'); }
     return response.json();
   },
 };

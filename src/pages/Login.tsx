@@ -273,7 +273,7 @@ export default function Login({
             id="loginEmail"
             name="loginEmail"
             type="text"
-            placeholder={mode === 'admin' ? 'admin' : 'Email or customer name'}
+            placeholder={mode === 'admin' ? 'admin' : 'Username'}
             defaultValue={mode === 'admin' ? 'admin' : ''}
             required
             style={{

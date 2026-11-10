@@ -14,6 +14,9 @@ import AdminManagement from './pages/AdminManagement';
 import travelMithraLogo from './assets/travel-mithra-sidebar-transparent.png';
 import type { AdminCredentials } from './api/client';
 import AdminSidebar from './components/AdminSidebar';
+import AgentSidebar from './components/AgentSidebar';
+import AgentSales from './pages/AgentSales';
+import AgentRewards from './pages/AgentRewards';
 
 type CurrentUser = {
   id?: number;
@@ -119,6 +122,7 @@ function AppLayout({
   onUpdateProfile,
 }: AppLayoutProps) {
   const isAdminAuthenticated = Boolean(adminCredentials);
+  const isAgent = currentUser?.role === 'agent' || currentUser?.role === 'sales_executive';
   const canAccessUserPages = isAuthenticated || isAdminAuthenticated;
 
   const routes = (
@@ -126,6 +130,8 @@ function AppLayout({
       <Route path="/" element={<Home />} />
       <Route path="/login" element={<Login onLogin={onLogin} onAdminLogin={onAdminLogin} />} />
       <Route path="/register" element={<Register onRegister={onRegister} />} />
+      <Route path="/agent-sales" element={canAccessUserPages && currentUser ? <AgentSales username={currentUser.email} /> : <Navigate to="/login" replace />} />
+      <Route path="/agent-rewards" element={canAccessUserPages && currentUser ? <AgentRewards username={currentUser.email} /> : <Navigate to="/login" replace />} />
       <Route
         path="/admin-management"
         element={
@@ -217,7 +223,7 @@ function AppLayout({
 
   return (
     <div className={`page-layout${canAccessUserPages ? ' authenticated' : ''}`}>
-      {isAdminAuthenticated ? <AdminSidebar onLogout={onLogout} /> : canAccessUserPages && (
+      {isAdminAuthenticated ? <AdminSidebar onLogout={onLogout} /> : isAgent ? <AgentSidebar onLogout={onLogout} /> : canAccessUserPages && (
         <aside className="sidebar">
           <header className="brand sidebar-brand-header">
             <img
@@ -242,6 +248,8 @@ function AppLayout({
               <NavLink to="/community">Community</NavLink>
               <NavLink to="/features">Features</NavLink>
               <NavLink to="/support">Support</NavLink>
+              <NavLink to="/agent-sales">Agent Sales</NavLink>
+              <NavLink to="/agent-rewards">Reward Session</NavLink>
               <NavLink to="/profile">Profile</NavLink>
             </>}
           </nav>

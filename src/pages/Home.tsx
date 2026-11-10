@@ -2,9 +2,13 @@ import { Link } from 'react-router-dom';
 import travelMithraLogo from '../assets/travel-mithra-sidebar-transparent.png';
 
 const destinations = [
-  { name: 'Santorini, Greece', type: 'Island escapes', image: 'https://images.unsplash.com/photo-1570077188670-e3a8d69ac5ff?auto=format&fit=crop&w=900&q=85' },
-  { name: 'Bali, Indonesia', type: 'Tropical adventures', image: 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=900&q=85' },
-  { name: 'Swiss Alps', type: 'Mountain journeys', image: 'https://images.unsplash.com/photo-1531366936337-7c912a4589a7?auto=format&fit=crop&w=900&q=85' },
+  { name: 'Dubai', type: 'Desert & city adventures', image: 'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?auto=format&fit=crop&w=900&q=85' },
+  { name: 'Malaysia', type: 'City & island escapes', image: 'https://images.unsplash.com/photo-1596422846543-75c6fc197f07?auto=format&fit=crop&w=900&q=85' },
+  { name: 'Vietnam', type: 'Culture & coastlines', image: 'https://images.unsplash.com/photo-1528127269322-539801943592?auto=format&fit=crop&w=900&q=85' },
+  { name: 'Bali', type: 'Tropical adventures', image: 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=900&q=85' },
+  { name: 'Amritsar', type: 'Culture & heritage', image: 'https://images.unsplash.com/photo-1587135941948-670b381f08ce?auto=format&fit=crop&w=900&q=85' },
+  { name: 'Manali', type: 'Mountain escapes', image: 'https://images.unsplash.com/photo-1626621341517-bbf3d9990a23?auto=format&fit=crop&w=900&q=85' },
+  { name: 'Delhi & Agra', type: 'Heritage journeys', image: 'https://images.unsplash.com/photo-1587474260584-136574528ed5?auto=format&fit=crop&w=900&q=85' },
 ];
 
 export default function Home() {
@@ -76,6 +80,20 @@ export default function Home() {
           opacity: 0.9;
         }
 
+        .home-nav-actions {
+          display: flex;
+          align-items: center;
+          gap: 14px;
+          flex-shrink: 0;
+        }
+
+        .nav-member {
+          color: #121d38;
+          text-decoration: none;
+          font-weight: 600;
+          white-space: nowrap;
+        }
+
         @media (max-width: 640px) {
           .home-nav {
             padding: 12px 16px;
@@ -95,7 +113,10 @@ export default function Home() {
        <nav className="home-nav-links">
           <a href="#why-travelmithra">Why us</a>
         </nav>
-        <Link to="/login" className="nav-login-separate">Log in</Link>
+        <div className="home-nav-actions">
+          <Link to="/register" className="nav-member">Become a member</Link>
+          <Link to="/login" className="nav-login-separate">Log in</Link>
+        </div>
       </header>
 
       <section className="hero home-hero" id="landing">
@@ -145,7 +166,6 @@ export default function Home() {
           <h3>A community for the<br />wildly curious.</h3>
         </div>
         <p>Travelmithra brings destination inspiration and real traveler wisdom together, so you can plan with confidence and travel with an open heart.</p>
-        <Link to="/register" className="text-link">Become a member <span>↗</span></Link>
       </section>
     </>
   );

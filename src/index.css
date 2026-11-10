@@ -1268,13 +1268,14 @@ nav a.active {
   margin: 0 0 10px;
   font-weight: 800;
   letter-spacing: -0.04em;
+  color: #ffffff !important;
 }
 
 .auth-page .auth-copy {
   font-size: 0.76rem;
   line-height: 1.45;
   margin: 0 0 10px;
-  color: rgba(220, 232, 238, 0.88);
+  color: #f3f7fa !important;
 }
 
 .auth-page .auth-card label {
@@ -1310,11 +1311,11 @@ nav a.active {
 .auth-page .auth-switch {
   margin-top: 12px;
   font-size: 0.75rem;
-  color: rgba(220, 232, 238, 0.9);
+  color: #f3f7fa !important;
 }
 
 .auth-page .auth-switch a {
-  color: #4be0d3;
+  color: #7dfff0 !important;
   font-weight: 700;
 }
 
@@ -3216,5 +3217,216 @@ nav a.active {
 .sales-bar span { position:absolute; bottom:calc(100% + 5px); left:50%; transform:translateX(-50%); opacity:0; white-space:nowrap; font-size:.68rem; color:var(--text); pointer-events:none; }
 .sales-bar:hover span { opacity:1; }
 .sales-month small { color:var(--muted); font-size:.78rem; }
+.agent-sales-page .agent-booking-card { padding: 30px; }
+.booking-section-heading { margin-bottom: 24px; }
+.booking-section-heading h3, .customer-list-heading h3 { margin: 6px 0; color: #122239; }
+.booking-section-heading p { margin: 0; color: #61748d; }
+.booking-kicker { color: #d36324; font-size: .72rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+.agent-booking-form { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; align-items: end; }
+.agent-booking-form label { display: grid; gap: 7px; color: #61748d; font-size: .82rem; font-weight: 700; }
+.agent-booking-form input { width: 100%; min-height: 46px; padding: 10px 13px; border: 1px solid #d5dee6; border-radius: 9px; background: #fff; color: #203542; font: inherit; }
+.agent-booking-form .booking-remarks { grid-column: span 2; }
+.agent-booking-form .primary-btn { min-height: 46px; margin: 0; }
+.booking-message { margin: 18px 0 0; color: #287a55; font-weight: 700; }
+.customer-list-heading { display: flex; justify-content: space-between; align-items: end; margin: 34px 0 14px; }
+.customer-count { color: #61748d; font-weight: 700; }
+.customer-bookings-table { margin-top: 0; }
+.customer-bookings-table .crm-table { min-width: 1050px; }
+.booking-status { display: inline-block; padding: 6px 10px; border-radius: 999px; font-size: .78rem; font-weight: 800; }
+.booking-status.confirmed { background: #dcf7e7; color: #187345; }
+.booking-status.inactive { background: #edf0f2; color: #687684; }
+@media (max-width: 800px) { .agent-booking-form { grid-template-columns: 1fr 1fr; } .agent-booking-form .booking-remarks { grid-column: span 2; } }
+@media (max-width: 520px) { .agent-sales-page .agent-booking-card { padding: 20px; } .agent-booking-form { grid-template-columns: 1fr; } .agent-booking-form .booking-remarks { grid-column: auto; } .customer-list-heading { align-items: start; flex-direction: column; gap: 6px; } }
 @media (max-width:600px) { .sales-chart-heading { flex-direction:column; }.sales-chart-heading strong { font-size:1rem; }.sales-chart { gap:7px; }.sales-bar span { display:none; } }
 @media (max-width:600px) { .sales-visuals { flex-direction:column; align-items:stretch; gap:18px; }.sales-donut-wrap { flex-basis:auto; }.sales-donut-wrap .sales-circle { width:145px; }.sales-visuals .sales-chart { height:180px; } }
+.auth-page .compact-register-card {
+  width: min(380px, calc(100% - 32px));
+  padding: 14px 18px 12px;
+  zoom: 0.82;
+  justify-self: center;
+  margin-inline: auto;
+}
+
+.auth-page .compact-register-card h3 {
+  font-size: 1.55rem;
+  margin-bottom: 6px;
+}
+
+.auth-page .compact-register-card .auth-copy {
+  margin-bottom: 6px;
+}
+
+.auth-page .compact-register-card label {
+  margin: 6px 0 3px;
+}
+
+.auth-page .compact-register-card input {
+  min-height: 34px;
+  padding: 6px 10px;
+  font-size: 0.86rem;
+  border-radius: 8px;
+}
+
+.auth-page .compact-register-card .primary-btn {
+  min-height: 36px;
+  margin-top: 9px;
+  padding: 6px 14px;
+  font-size: 0.9rem;
+}
+
+.auth-page .compact-register-card .auth-switch {
+  margin-top: 8px;
+}
+
+.auth-page .compact-register-card .file-input-wrapper {
+  min-height: 40px;
+  padding: 4px 8px;
+}
+
+.auth-page .compact-register-card .file-input-icon {
+  font-size: 0.75rem;
+}
+
+.agent-rules {
+  max-height: 230px;
+  overflow-y: auto;
+  padding: 10px 12px;
+  margin: 8px 0 12px;
+  border: 1px solid rgba(125, 215, 210, 0.25);
+  border-radius: 8px;
+  color: #edf6fb;
+  font-size: 0.76rem;
+  line-height: 1.45;
+}
+
+.agent-rules p { margin: 0 0 8px; }
+.agent-rules ul { margin: 0 0 8px; padding-left: 18px; }
+.handbook-frame { padding: 0; overflow: hidden; height: 310px; }
+.handbook-frame iframe { width: 100%; height: 100%; border: 0; display: block; }
+.handbook-download { margin: 6px 0 8px; font-size: 0.72rem; text-align: right; }
+.handbook-download a { color: #7dfff0; font-weight: 700; }
+.rules-consent { display: flex !important; align-items: flex-start; gap: 7px; margin: 8px 0 10px !important; font-size: 0.72rem !important; }
+.rules-consent input { width: 15px !important; min-height: 15px !important; margin-top: 2px; }
+.compact-register-card > .secondary-btn { width: 100%; margin-top: 8px; min-height: 32px; }
+.agreement-download { border: 0; background: transparent; color: #7dfff0; padding: 0; font-size: 0.75rem; font-weight: 700; cursor: pointer; text-decoration: underline; }
+
+/* Rules are presented as a large A4-style document instead of a compact auth card. */
+.auth-page.rules-auth-page {
+  display: block;
+  min-height: calc(100vh - 48px);
+  padding: 40px 18px 56px;
+  background: #eef1f3;
+  overflow-x: hidden;
+}
+
+.auth-page .rules-card {
+  width: min(794px, 100%);
+  margin: 0 auto;
+  padding: 0;
+  zoom: 1;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+
+.rules-card > .section-kicker,
+.rules-card > h3,
+.rules-card > .handbook-download,
+.rules-card > .rules-consent,
+.rules-card > .primary-btn,
+.rules-card > .secondary-btn,
+.rules-card > .error-message {
+  width: min(794px, 100%);
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.rules-card > .section-kicker {
+  margin-bottom: 8px;
+  color: #167b85;
+  font-size: .78rem;
+}
+
+.rules-card > h3 {
+  margin-bottom: 18px;
+  color: #132b3b !important;
+  font-size: clamp(2rem, 4vw, 3rem) !important;
+  letter-spacing: -.04em;
+}
+
+.rules-card .handbook-frame {
+  width: min(794px, 100%);
+  height: 1123px;
+  min-height: 1123px;
+  aspect-ratio: 210 / 297;
+  margin: 0 auto;
+  padding: 0;
+  overflow-x: hidden !important;
+  overflow-y: scroll;
+  background: #fff;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.rules-card .handbook-frame iframe {
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.rules-card .handbook-download {
+  margin-top: 12px;
+  margin-bottom: 18px;
+  text-align: right;
+  font-size: .84rem;
+}
+
+.rules-card .handbook-download a {
+  color: #087c86;
+  display: inline-flex;
+  align-items: center;
+  padding: 10px 18px;
+  border-radius: 9px;
+  background: #f4813f;
+  color: #fff;
+  text-decoration: none;
+  font-weight: 800;
+  box-shadow: 0 5px 12px rgba(244, 129, 63, .22);
+}
+
+.rules-card .rules-consent {
+  align-items: center !important;
+  margin-top: 0 !important;
+  margin-bottom: 14px !important;
+  color: #203542 !important;
+  font-size: .95rem !important;
+}
+
+.rules-card .rules-consent input {
+  width: 20px !important;
+  height: 20px;
+  min-height: 20px !important;
+  accent-color: #f4813f;
+}
+
+.rules-card > .primary-btn,
+.rules-card > .secondary-btn {
+  min-height: 48px;
+  border-radius: 12px;
+  font-size: 1rem;
+}
+
+.rules-card > .secondary-btn {
+  margin-top: 10px;
+  background: #d9e1e5;
+  color: #203542;
+}
+
+@media (max-width: 640px) {
+  .auth-page.rules-auth-page { padding: 24px 12px 40px; }
+  .rules-card .handbook-frame { height: calc((100vw - 24px) * 1.4143); min-height: 0; }
+  .rules-card > h3 { font-size: 2rem !important; }
+}
+
