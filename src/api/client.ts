@@ -1,6 +1,6 @@
 const configuredApiBaseUrl = import.meta.env.VITE_API_BASE_URL?.trim();
 const developmentApiBaseUrls = import.meta.env.DEV
-  ? [ 'http://localhost:4002/api']
+  ? [ 'http://localhost:4001/api', 'http://localhost:4002/api']
   : [];
 
 // Never send a production request to localhost. Vite replaces these values at
