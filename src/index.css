@@ -3449,7 +3449,17 @@ nav a.active {
   font-size: .84rem;
 }
 
+.crm-page .report-card .crm-table th:nth-child(4),
+.crm-page .report-card .crm-table td:nth-child(4) {
+  width: 110px;
+  max-width: 110px;
+  padding-left: 12px;
+  padding-right: 12px;
+  font-size: .82rem;
+}
+
 .crm-page .report-card .crm-table td:first-child strong,
+.crm-page .report-card .crm-table td:nth-child(4) strong,
 .crm-page .report-card .crm-table td:nth-child(5) strong {
   font-size: .86rem;
 }
