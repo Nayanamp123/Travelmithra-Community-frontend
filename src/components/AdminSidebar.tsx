@@ -16,6 +16,7 @@ export default function AdminSidebar({ onLogout }: AdminSidebarProps) {
         <NavLink to="/reports">Reports</NavLink>
         <NavLink to="/rewards">Rewards</NavLink>
         <NavLink to="/agents">Agents</NavLink>
+        <NavLink to="/community">Manage Roles</NavLink>
         <NavLink to="/">Customer Site</NavLink>
       </nav>
       <button type="button" className="secondary-btn logout-btn" onClick={onLogout}>Logout</button>

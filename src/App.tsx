@@ -15,8 +15,10 @@ import travelMithraLogo from './assets/travel-mithra-sidebar-transparent.png';
 import type { AdminCredentials } from './api/client';
 import AdminSidebar from './components/AdminSidebar';
 import AgentSidebar from './components/AgentSidebar';
+import TeamLeadSidebar from './components/TeamLeadSidebar';
 import AgentSales from './pages/AgentSales';
 import AgentRewards from './pages/AgentRewards';
+import TeamLeadDashboard from './pages/TeamLeadDashboard';
 
 type CurrentUser = {
   id?: number;
@@ -27,6 +29,7 @@ type CurrentUser = {
   referralCode?: string;
   referredBy?: number;
   bookings?: Array<Record<string, unknown>>;
+  loginPassword?: string;
 };
 
 function App() {
@@ -122,6 +125,7 @@ function AppLayout({
   onUpdateProfile,
 }: AppLayoutProps) {
   const isAdminAuthenticated = Boolean(adminCredentials);
+  const isTeamLead = currentUser?.role === 'team_lead';
   const isAgent = currentUser?.role === 'agent' || currentUser?.role === 'sales_executive';
   const canAccessUserPages = isAuthenticated || isAdminAuthenticated;
 
@@ -130,8 +134,9 @@ function AppLayout({
       <Route path="/" element={<Home />} />
       <Route path="/login" element={<Login onLogin={onLogin} onAdminLogin={onAdminLogin} />} />
       <Route path="/register" element={<Register onRegister={onRegister} />} />
-      <Route path="/agent-sales" element={canAccessUserPages && currentUser ? <AgentSales username={currentUser.email} /> : <Navigate to="/login" replace />} />
-      <Route path="/agent-rewards" element={canAccessUserPages && currentUser ? <AgentRewards username={currentUser.email} /> : <Navigate to="/login" replace />} />
+      <Route path="/agent-sales" element={isAgent && currentUser ? <AgentSales username={currentUser.email} /> : <Navigate to="/login" replace />} />
+      <Route path="/agent-rewards" element={isAgent && currentUser ? <AgentRewards username={currentUser.email} /> : <Navigate to="/login" replace />} />
+      <Route path="/team-lead" element={isTeamLead && currentUser?.loginPassword ? <TeamLeadDashboard credentials={{ username: currentUser.email, password: currentUser.loginPassword }} /> : <Navigate to="/login" replace />} />
       <Route
         path="/admin-management"
         element={
@@ -150,7 +155,9 @@ function AppLayout({
       <Route
         path="/dashboard"
         element={
-          canAccessUserPages ? (
+          isTeamLead ? (
+            <Navigate to="/team-lead" replace />
+          ) : canAccessUserPages ? (
             <Dashboard profileName={profileName} currentUser={currentUser} />
           ) : (
             <Navigate to="/login" replace />
@@ -160,7 +167,7 @@ function AppLayout({
       <Route
         path="/community"
         element={
-          canAccessUserPages ? (
+          canAccessUserPages && !isTeamLead ? (
             <Community currentUser={currentUser} />
           ) : (
             <Navigate to="/login" replace />
@@ -223,7 +230,7 @@ function AppLayout({
 
   return (
     <div className={`page-layout${canAccessUserPages ? ' authenticated' : ''}`}>
-      {isAdminAuthenticated ? <AdminSidebar onLogout={onLogout} /> : isAgent ? <AgentSidebar onLogout={onLogout} /> : canAccessUserPages && (
+      {isAdminAuthenticated ? <AdminSidebar onLogout={onLogout} /> : isTeamLead ? <TeamLeadSidebar onLogout={onLogout} /> : isAgent ? <AgentSidebar onLogout={onLogout} /> : canAccessUserPages && (
         <aside className="sidebar">
           <header className="brand sidebar-brand-header">
             <img

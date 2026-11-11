@@ -62,16 +62,21 @@ export type AdminCredentials = {
   password: string;
 };
 
+export type TeamLeadCredentials = {
+  username: string;
+  password: string;
+};
+
 // ===== USER AUTHENTICATION API =====
 
 export const authAPI = {
-  register: async (name: string, username: string, phone: string, password: string, avatar?: string, referralCode?: string, termsAccepted = false, consultantId?: string) => {
+  register: async (name: string, username: string, phone: string, password: string, avatar?: string, referralCode?: string, termsAccepted = false, consultantId?: string, salesExecutive?: string) => {
     const response = await request('/auth/register', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ name, username, phone, password, avatar, referralCode, termsAccepted, consultantId }),
+      body: JSON.stringify({ name, username, phone, password, avatar, referralCode, termsAccepted, consultantId, salesExecutive }),
     });
     if (!response.ok) {
       const error = await response.json();
@@ -237,6 +242,36 @@ export const agentAPI = {
   },
 };
 
+function teamLeadHeaders(credentials: TeamLeadCredentials) {
+  return {
+    'x-team-lead-username': credentials.username,
+    'x-team-lead-password': credentials.password,
+  };
+}
+
+export const teamLeadAPI = {
+  getAgents: async (credentials: TeamLeadCredentials) => {
+    const response = await request('/team-lead/agents', { headers: teamLeadHeaders(credentials) });
+    if (!response.ok) throw new Error('Failed to fetch team agents');
+    return response.json();
+  },
+  getCustomers: async (credentials: TeamLeadCredentials) => {
+    const response = await request('/team-lead/customers', { headers: teamLeadHeaders(credentials) });
+    if (!response.ok) throw new Error('Failed to fetch customers');
+    return response.json();
+  },
+  getBookings: async (credentials: TeamLeadCredentials) => {
+    const response = await request('/team-lead/bookings', { headers: teamLeadHeaders(credentials) });
+    if (!response.ok) throw new Error('Failed to fetch trip and payment details');
+    return response.json();
+  },
+  getRewards: async (credentials: TeamLeadCredentials) => {
+    const response = await request('/team-lead/rewards', { headers: teamLeadHeaders(credentials) });
+    if (!response.ok) throw new Error('Failed to fetch team rewards');
+    return response.json();
+  },
+};
+
 // ===== USER PROFILE API =====
 
 export const profileAPI = {
@@ -280,6 +315,19 @@ export const profileAPI = {
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.error || 'Failed to update user role');
+    }
+    return response.json();
+  },
+
+  updateUserTeamLead: async (userId: number, salesExecutive: string | null) => {
+    const response = await fetch(`${API_BASE_URL}/users/${userId}/team-lead`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ salesExecutive }),
+    });
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to assign Team Lead');
     }
     return response.json();
   },

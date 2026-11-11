@@ -4,7 +4,7 @@ import type { FormEvent } from 'react';
 import { authAPI } from '../api/client';
 
 type RegisterProps = { onRegister: (user: { id?: number; name: string; email: string; avatar?: string; role?: string }) => void };
-type RegistrationData = { name: string; username: string; phone: string; password: string; avatar?: string; referral?: string };
+type RegistrationData = { name: string; username: string; phone: string; password: string; avatar?: string; referral?: string; salesExecutive?: string };
 
 export default function Register({ onRegister }: RegisterProps) {
   const navigate = useNavigate();
@@ -14,7 +14,7 @@ export default function Register({ onRegister }: RegisterProps) {
   const [agreed, setAgreed] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [consultantId] = useState(() => `CONS-${Date.now().toString(36).toUpperCase()}-${Math.floor(Math.random() * 9000 + 1000)}`);
+  const [consultantId] = useState(() => `TM-${Math.floor(100000 + Math.random() * 900000)}`);
   const referral = new URLSearchParams(location.search).get('ref') || '';
 
   const readFile = (file?: File) => new Promise<string | undefined>((resolve, reject) => {
@@ -43,7 +43,7 @@ export default function Register({ onRegister }: RegisterProps) {
     const value = (name: string) => (form.elements.namedItem(name) as HTMLInputElement).value.trim();
     try {
       const avatar = await readFile((form.elements.namedItem('registerAvatar') as HTMLInputElement).files?.[0]);
-      setPending({ name: value('registerName'), username: value('registerUsername'), phone: value('registerPhone'), password: value('registerPassword'), avatar, referral });
+      setPending({ name: value('registerName'), username: value('registerUsername'), phone: value('registerPhone'), password: value('registerPassword'), avatar, referral, salesExecutive: value('salesExecutive') });
       setStep('rules');
     } catch (err) { setError(err instanceof Error ? err.message : 'Please check your details'); }
   };
@@ -52,7 +52,7 @@ export default function Register({ onRegister }: RegisterProps) {
     if (!pending || !agreed) return;
     setLoading(true); setError('');
     try {
-      const response = await authAPI.register(pending.name, pending.username, pending.phone, pending.password, pending.avatar, pending.referral || undefined, true, consultantId);
+      const response = await authAPI.register(pending.name, pending.username, pending.phone, pending.password, pending.avatar, pending.referral || undefined, true, consultantId, pending.salesExecutive);
       onRegister(response.user); navigate('/dashboard');
     } catch (err) { setError(err instanceof Error ? err.message : 'Registration failed'); setLoading(false); }
   };
@@ -72,6 +72,7 @@ export default function Register({ onRegister }: RegisterProps) {
         <label htmlFor="registerName">Member name</label><input id="registerName" name="registerName" type="text" placeholder="Your name" required />
         <label htmlFor="consultantId">Consultant ID</label><input id="consultantId" name="consultantId" type="text" value={consultantId} readOnly aria-label="Automatically generated consultant ID" />
         <label htmlFor="registerPhone">Phone number</label><input id="registerPhone" name="registerPhone" type="tel" placeholder="Your phone number" required />
+        <label htmlFor="salesExecutive">Team Lead</label><select id="salesExecutive" name="salesExecutive" defaultValue="SANJU" required><option value="SANJU">SANJU</option><option value="UMA MAHESHWARI">UMA MAHESHWARI</option></select>
         <label htmlFor="registerUsername">Username</label><input id="registerUsername" name="registerUsername" type="text" placeholder="Choose a username" required />
         <label htmlFor="registerPassword">Password</label><input id="registerPassword" name="registerPassword" type="password" placeholder="Choose a password" required />
         <label htmlFor="registerAvatar">Profile picture</label><label className="file-input-wrapper" htmlFor="registerAvatar"><input id="registerAvatar" name="registerAvatar" type="file" accept="image/*" /><span className="file-input-icon">Choose profile image</span></label>

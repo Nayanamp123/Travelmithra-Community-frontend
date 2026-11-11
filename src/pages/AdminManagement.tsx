@@ -12,7 +12,7 @@ const AGENTS_STORAGE_KEY = 'travelmithra-agents';
 const RECEIPT_SEQUENCE_STORAGE_KEY = 'travelmithra-next-receipt-number-v2';
 const RECEIPT_NUMBERS_STORAGE_KEY = 'travelmithra-receipt-numbers-v2';
 
-const executives = ['All sales executives', 'SANJU', 'UMA MAHESHWARI'];
+const executives = ['All sales executives', 'SANJU', 'UMA MAHESHWARI', 'SHARNYA'];
 const seedBookings: Booking[] = [
 ];
 const seedCustomers: Customer[] = [
@@ -337,7 +337,7 @@ function AgentManagement({ credentials }: { credentials: AdminCredentials }) {
     const select = Array.from(document.querySelectorAll<HTMLSelectElement>('.crm-modal select'))
       .find((candidate) => Array.from(candidate.options).some((option) => option.textContent === 'Aliya'));
     if (!select) return;
-    select.replaceChildren(...['SANJU', 'UMA MAHESHWARI'].map((name) => new Option(name, name)));
+    select.replaceChildren(...['SANJU', 'UMA MAHESHWARI', 'SHARNYA'].map((name) => new Option(name, name)));
     select.value = executive;
   }, [executive, showCreate]);
   const [name, setName] = useState('');

@@ -13,6 +13,7 @@ type LoginProps = {
     referralCode?: string;
     referredBy?: number;
     role?: string;
+    loginPassword?: string;
   }) => void;
 
   onAdminLogin: (credentials: AdminCredentials) => void;
@@ -81,9 +82,9 @@ export default function Login({
 
         const { user, bookings } = response;
 
-        onLogin({ ...user, bookings } as typeof user);
+        onLogin({ ...user, bookings, loginPassword: password } as typeof user);
 
-        navigate('/dashboard');
+        navigate(user.role === 'team_lead' ? '/team-lead' : '/dashboard');
       } catch (travelerError) {
         // Only try the legacy admin credentials when the API responded with
         // an authentication error. Do not hide network/configuration errors

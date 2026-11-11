@@ -6,6 +6,7 @@ type CommunityMember = {
   name: string;
   email?: string;
   role?: string;
+  sales_executive?: string | null;
   joined?: string;
   referral_code?: string;
   referred_by_name?: string;
@@ -70,6 +71,7 @@ export default function Community({ currentUser }: CommunityProps) {
           ...u,
           email: (u as any).email,
           role: (u as any).role,
+          sales_executive: (u as any).sales_executive || (u as any).salesExecutive || null,
           joined: (u as any).joined || (u as any).createdAt,
           referral_code: (u as any).referral_code,
           referred_by_name: (u as any).referred_by_name,
@@ -131,6 +133,19 @@ export default function Community({ currentUser }: CommunityProps) {
     }
   };
 
+  const updateTeamLead = async (userId: number | undefined, salesExecutive: string) => {
+    if (!userId) return;
+    try {
+      await profileAPI.updateUserTeamLead(userId, salesExecutive || null);
+      setMembers((prev) => prev.map((member) => member.id === userId ? { ...member, sales_executive: salesExecutive || null } : member));
+      setActionMessage('Team Lead assignment updated');
+      setTimeout(() => setActionMessage(''), 2500);
+    } catch (err) {
+      setActionMessage(err instanceof Error ? err.message : 'Failed to assign Team Lead');
+      setTimeout(() => setActionMessage(''), 2500);
+    }
+  };
+
   const removeUser = async (userId?: number) => {
     if (!userId) return;
     if (!confirm('Delete this user? This action is irreversible.')) return;
@@ -179,6 +194,7 @@ export default function Community({ currentUser }: CommunityProps) {
                       <th scope="col">Name</th>
                       {isSuperAdmin && <th scope="col">Email</th>}
                       {isSuperAdmin && <th scope="col">Role</th>}
+                      {isSuperAdmin && <th scope="col">Team Lead</th>}
                       {isSuperAdmin && <th scope="col">Referred by</th>}
                       {isSuperAdmin && <th scope="col">Invite Code</th>}
                       {isSuperAdmin && <th scope="col">Joined</th>}
@@ -194,6 +210,7 @@ export default function Community({ currentUser }: CommunityProps) {
                         </td>
                         {isSuperAdmin && <td>{member.email ?? '-'}</td>}
                         {isSuperAdmin && <td>{member.role ?? 'member'}</td>}
+                        {isSuperAdmin && <td>{member.sales_executive ?? 'Unassigned'}</td>}
                         {isSuperAdmin && <td>{member.referred_by_name ?? '-'}</td>}
                         {isSuperAdmin && <td>{member.referral_code ?? '-'}</td>}
                         {isSuperAdmin && <td>{member.joined ?? '-'}</td>}
@@ -205,7 +222,17 @@ export default function Community({ currentUser }: CommunityProps) {
                             >
                               <option value="member">member</option>
                               <option value="moderator">moderator</option>
+                              <option value="team_lead">team_lead</option>
                               <option value="superadmin">superadmin</option>
+                            </select>
+                            <select
+                              style={{ marginLeft: 8 }}
+                              value={member.sales_executive ?? ''}
+                              onChange={(e) => updateTeamLead(member.id, e.target.value)}
+                            >
+                              <option value="">Unassigned</option>
+                              <option value="SANJU">SANJU</option>
+                              <option value="UMA MAHESHWARI">UMA MAHESHWARI</option>
                             </select>
                             <button
                               style={{ marginLeft: 8 }}
