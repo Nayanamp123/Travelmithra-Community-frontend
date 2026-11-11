@@ -137,6 +137,10 @@ function AppLayout({
       <Route path="/agent-sales" element={isAgent && currentUser ? <AgentSales username={currentUser.email} /> : <Navigate to="/login" replace />} />
       <Route path="/agent-rewards" element={isAgent && currentUser ? <AgentRewards username={currentUser.email} /> : <Navigate to="/login" replace />} />
       <Route path="/team-lead" element={isTeamLead && currentUser?.loginPassword ? <TeamLeadDashboard credentials={{ username: currentUser.email, password: currentUser.loginPassword }} /> : <Navigate to="/login" replace />} />
+      <Route path="/team-lead/agents" element={isTeamLead && currentUser?.loginPassword ? <TeamLeadDashboard credentials={{ username: currentUser.email, password: currentUser.loginPassword }} /> : <Navigate to="/login" replace />} />
+      <Route path="/team-lead/bookings" element={isTeamLead && currentUser?.loginPassword ? <TeamLeadDashboard credentials={{ username: currentUser.email, password: currentUser.loginPassword }} /> : <Navigate to="/login" replace />} />
+      <Route path="/team-lead/rewards" element={isTeamLead && currentUser?.loginPassword ? <TeamLeadDashboard credentials={{ username: currentUser.email, password: currentUser.loginPassword }} /> : <Navigate to="/login" replace />} />
+      <Route path="/team-lead/customers" element={isTeamLead && currentUser?.loginPassword ? <TeamLeadDashboard credentials={{ username: currentUser.email, password: currentUser.loginPassword }} /> : <Navigate to="/login" replace />} />
       <Route
         path="/admin-management"
         element={
