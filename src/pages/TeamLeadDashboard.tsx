@@ -18,6 +18,7 @@ export default function TeamLeadDashboard({ credentials }: { credentials: TeamLe
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [rewards, setRewards] = useState<Reward[]>([]);
   const [selectedAgent, setSelectedAgent] = useState('All agents');
+  const [selectedDestination, setSelectedDestination] = useState('All destinations');
   const [error, setError] = useState('');
 
   const view: TeamLeadView = pathname.endsWith('/agents')
@@ -49,7 +50,14 @@ export default function TeamLeadDashboard({ credentials }: { credentials: TeamLe
     agents.flatMap((agent) => [agent.name, agent.email].filter(Boolean).map((value) => value.toLowerCase().trim()))
   ), [agents]);
   const assignedBookings = bookings.filter((booking) => agentKeys.has(booking.executive.toLowerCase().trim()));
-  const reportBookings = assignedBookings.filter((booking) => selectedAgent === 'All agents' || booking.executive.toLowerCase().trim() === selectedAgent.toLowerCase().trim());
+  const destinationOptions = useMemo(() => Array.from(new Set(
+    assignedBookings.map((booking) => String(booking.route || '').trim()).filter(Boolean)
+  )).sort((left, right) => left.localeCompare(right)), [assignedBookings]);
+  const reportBookings = assignedBookings.filter((booking) => {
+    const matchesAgent = selectedAgent === 'All agents' || booking.executive.toLowerCase().trim() === selectedAgent.toLowerCase().trim();
+    const matchesDestination = selectedDestination === 'All destinations' || booking.route.toLowerCase().includes(selectedDestination.toLowerCase().trim());
+    return matchesAgent && matchesDestination;
+  });
   const teamRewards = rewards.filter((reward) => selectedAgent === 'All agents' || reward.agent.toLowerCase().trim() === selectedAgent.toLowerCase().trim());
   const totalSales = reportBookings.reduce((sum, booking) => sum + Number(booking.amount || 0), 0);
   const totalReceived = reportBookings.reduce((sum, booking) => sum + Number(booking.received || 0), 0);
@@ -94,7 +102,7 @@ export default function TeamLeadDashboard({ credentials }: { credentials: TeamLe
 
     {view === 'bookings' && <>
       {renderStats()}
-      <div className="crm-toolbar"><div><h3>Agent sales reports</h3><p>Filter bookings and payments for the selected agent.</p></div><select value={selectedAgent} onChange={(event) => setSelectedAgent(event.target.value)}><option>All agents</option>{agents.map((agent) => <option key={agent.id} value={agent.email}>{agent.name} ({agent.email})</option>)}</select></div>
+      <div className="crm-toolbar"><div><h3>Agent sales reports</h3><p>Filter bookings, customers and payments by agent or destination.</p></div><select aria-label="Filter by agent" value={selectedAgent} onChange={(event) => setSelectedAgent(event.target.value)}><option>All agents</option>{agents.map((agent) => <option key={agent.id} value={agent.email}>{agent.name} ({agent.email})</option>)}</select><select aria-label="Filter by destination" value={selectedDestination} onChange={(event) => setSelectedDestination(event.target.value)}><option>All destinations</option>{destinationOptions.map((destination) => <option key={destination} value={destination}>{destination}</option>)}</select></div>
       {renderBookingTable(reportBookings)}
     </>}
 
