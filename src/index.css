@@ -3430,3 +3430,27 @@ nav a.active {
   .rules-card > h3 { font-size: 2rem !important; }
 }
 
+/* Keep the Admin sales report destination and amount columns compact. */
+.crm-page .report-card .crm-table th:first-child,
+.crm-page .report-card .crm-table td:first-child {
+  width: 190px;
+  max-width: 190px;
+  padding-left: 14px;
+  padding-right: 14px;
+  font-size: .86rem;
+}
+
+.crm-page .report-card .crm-table th:nth-child(5),
+.crm-page .report-card .crm-table td:nth-child(5) {
+  width: 105px;
+  max-width: 105px;
+  padding-left: 12px;
+  padding-right: 12px;
+  font-size: .84rem;
+}
+
+.crm-page .report-card .crm-table td:first-child strong,
+.crm-page .report-card .crm-table td:nth-child(5) strong {
+  font-size: .86rem;
+}
+
