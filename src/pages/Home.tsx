@@ -6,7 +6,7 @@ const destinations = [
   { name: 'Malaysia', type: 'City & island escapes', image: 'https://images.unsplash.com/photo-1596422846543-75c6fc197f07?auto=format&fit=crop&w=900&q=85' },
   { name: 'Vietnam', type: 'Culture & coastlines', image: 'https://images.unsplash.com/photo-1528127269322-539801943592?auto=format&fit=crop&w=900&q=85' },
   { name: 'Bali', type: 'Tropical adventures', image: 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=900&q=85' },
-  { name: 'Amritsar', type: 'Culture & heritage', image: 'https://images.unsplash.com/photo-1587135941948-670b381f08ce?auto=format&fit=crop&w=900&q=85' },
+  { name: 'Amritsar', type: 'Culture & heritage', image: 'https://images.unsplash.com/photo-1586261709963-7a93cad40d44?auto=format&fit=crop&w=900&q=85' },
   { name: 'Manali', type: 'Mountain escapes', image: 'https://images.unsplash.com/photo-1626621341517-bbf3d9990a23?auto=format&fit=crop&w=900&q=85' },
   { name: 'Delhi & Agra', type: 'Heritage journeys', image: 'https://images.unsplash.com/photo-1587474260584-136574528ed5?auto=format&fit=crop&w=900&q=85' },
 ];
