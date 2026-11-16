@@ -12,7 +12,7 @@ const AGENTS_STORAGE_KEY = 'travelmithra-agents';
 const RECEIPT_SEQUENCE_STORAGE_KEY = 'travelmithra-next-receipt-number-v2';
 const RECEIPT_NUMBERS_STORAGE_KEY = 'travelmithra-receipt-numbers-v2';
 
-const executives = ['All sales executives', 'SANJU', 'UMA MAHESHWARI', 'SHARNYA'];
+const executives = ['All sales executives', 'SANJU', 'UMA MAHESHWARI', 'SHARNYA', 'ASWIN'];
 const seedBookings: Booking[] = [
 ];
 const seedCustomers: Customer[] = [

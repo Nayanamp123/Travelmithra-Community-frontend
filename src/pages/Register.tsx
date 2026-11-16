@@ -43,7 +43,7 @@ export default function Register({ onRegister }: RegisterProps) {
     const value = (name: string) => (form.elements.namedItem(name) as HTMLInputElement).value.trim();
     try {
       const avatar = await readFile((form.elements.namedItem('registerAvatar') as HTMLInputElement).files?.[0]);
-      setPending({ name: value('registerName'), username: value('registerUsername'), phone: value('registerPhone'), password: value('registerPassword'), avatar, referral, salesExecutive: value('salesExecutive') });
+      setPending({ name: value('registerName'), username: value('registerUsername'), phone: value('registerPhone'), password: value('registerPassword'), avatar, referral: value('referralCode'), salesExecutive: value('salesExecutive') });
       setStep('rules');
     } catch (err) { setError(err instanceof Error ? err.message : 'Please check your details'); }
   };
@@ -73,6 +73,7 @@ export default function Register({ onRegister }: RegisterProps) {
         <label htmlFor="consultantId">Consultant ID</label><input id="consultantId" name="consultantId" type="text" value={consultantId} readOnly aria-label="Automatically generated consultant ID" />
         <label htmlFor="registerPhone">Phone number</label><input id="registerPhone" name="registerPhone" type="tel" placeholder="Your phone number" required />
         <label htmlFor="salesExecutive">Team Lead</label><select id="salesExecutive" name="salesExecutive" defaultValue="SANJU" required><option value="SANJU">SANJU</option><option value="UMA MAHESHWARI">UMA MAHESHWARI</option></select>
+        <label htmlFor="referralCode">Referral link or code <span className="optional-label">(optional)</span></label><input id="referralCode" name="referralCode" type="text" defaultValue={referral} placeholder="Paste referral link or code" autoComplete="off" /><small className="field-hint">If someone shared a Travelmithra referral link, paste it here.</small>
         <label htmlFor="registerUsername">Username</label><input id="registerUsername" name="registerUsername" type="text" placeholder="Choose a username" required />
         <label htmlFor="registerPassword">Password</label><input id="registerPassword" name="registerPassword" type="password" placeholder="Choose a password" required />
         <label htmlFor="registerAvatar">Profile picture</label><label className="file-input-wrapper" htmlFor="registerAvatar"><input id="registerAvatar" name="registerAvatar" type="file" accept="image/*" /><span className="file-input-icon">Choose profile image</span></label>
