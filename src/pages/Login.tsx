@@ -30,6 +30,8 @@ export default function Login({
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [mode, setMode] = useState<LoginMode>('traveler');
+  const [otpChallenge, setOtpChallenge] = useState('');
+  const [otp, setOtp] = useState('');
 
   const handleSubmit = async (
     event: FormEvent<HTMLFormElement>
@@ -50,6 +52,12 @@ export default function Login({
     ).value;
 
     try {
+      if (otpChallenge) {
+        const response = await authAPI.verifyAgentOtp(otpChallenge, otp);
+        onLogin({ ...response.user, loginPassword: password } as typeof response.user);
+        navigate('/agent-sales');
+        return;
+      }
       // =========================
       // ADMIN LOGIN
       // =========================
@@ -81,6 +89,12 @@ export default function Login({
         );
 
         const { user, bookings } = response;
+
+        if (response.otpRequired) {
+          setOtpChallenge(response.challengeId);
+          setError(`Enter the OTP sent to ${response.maskedEmail}.`);
+          return;
+        }
 
         onLogin({ ...user, bookings, loginPassword: password } as typeof user);
 
@@ -287,6 +301,8 @@ export default function Login({
             }}
           />
 
+          {otpChallenge && <input value={otp} onChange={(event) => setOtp(event.target.value.replace(/\D/g, '').slice(0, 6))} inputMode="numeric" maxLength={6} placeholder="6-digit email OTP" required aria-label="Email OTP" />}
+
           <label
             htmlFor="loginPassword"
             style={{
@@ -335,7 +351,7 @@ export default function Login({
               ? 'Logging in...'
               : mode === 'admin'
                 ? 'Open Admin Management'
-                : 'Login'}
+              : otpChallenge ? 'Verify OTP' : 'Login'}
           </button>
         </form>
 

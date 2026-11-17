@@ -99,6 +99,11 @@ export const authAPI = {
     }
     return response.json();
   },
+  verifyAgentOtp: async (challengeId: string, otp: string) => {
+    const response = await request('/auth/agent/verify-otp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ challengeId, otp }) });
+    if (!response.ok) { const error = await response.json(); throw new Error(error.error || 'OTP verification failed'); }
+    return response.json();
+  },
 };
 
 // ===== ADMIN MANAGEMENT API =====
