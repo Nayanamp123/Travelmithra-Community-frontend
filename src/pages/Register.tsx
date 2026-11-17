@@ -14,6 +14,8 @@ export default function Register({ onRegister }: RegisterProps) {
   const [agreed, setAgreed] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [signature, setSignature] = useState('');
+  const [agreementDate, setAgreementDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [consultantId] = useState(() => `TM-${Math.floor(100000 + Math.random() * 900000)}`);
   const referral = new URLSearchParams(location.search).get('ref') || '';
 
@@ -58,7 +60,7 @@ export default function Register({ onRegister }: RegisterProps) {
   };
 
   const downloadAgreement = () => {
-    const agreement = `TRAVELMITHRA ASSOCIATE TRAVEL CONSULTANT AGREEMENT\n\nConsultant ID: ${consultantId}\n\nI acknowledge that I have read and agree to the Travelmithra agent rules and regulations. I agree to provide accurate customer and booking information, protect customer privacy, represent Travelmithra honestly, follow approved pricing and payment procedures, and accept responsibility for activity performed through my account.\n\nRules version: agent-rules-v1\nAgreement status: Accepted upon submission\n\nConsultant name: ______________________________\nUsername: _____________________________________\nPhone number: __________________________________\nSignature: _____________________________________\nDate: _________________________________________\n\nFor administrative and legal records, this agreement is submitted to Travelmithra when registration is completed.`;
+    const agreement = `TRAVELMITHRA ASSOCIATE TRAVEL CONSULTANT AGREEMENT\n\nConsultant ID: ${consultantId}\n\nI acknowledge that I have read and agree to the Travelmithra agent rules and regulations. I agree to provide accurate customer and booking information, protect customer privacy, represent Travelmithra honestly, follow approved pricing and payment procedures, and accept responsibility for activity performed through my account.\n\nRules version: agent-rules-v1\nAgreement status: Accepted upon submission\n\nConsultant name: ${pending?.name || ''}\nEmail: ${pending?.username || ''}\nPhone number: ${pending?.phone || ''}\nSignature: ${signature}\nDate: ${agreementDate}\n\nFor administrative and legal records, this agreement is submitted to Travelmithra when registration is completed.`;
     const blob = new Blob([agreement], { type: 'text/plain;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a'); link.href = url; link.download = `Travelmithra-Agreement-${consultantId}.txt`; link.click(); URL.revokeObjectURL(url);
@@ -74,7 +76,7 @@ export default function Register({ onRegister }: RegisterProps) {
         <label htmlFor="registerPhone">Phone number</label><input id="registerPhone" name="registerPhone" type="tel" placeholder="Your phone number" required />
         <label htmlFor="salesExecutive">Team Lead</label><select id="salesExecutive" name="salesExecutive" defaultValue="SANJU" required><option value="SANJU">SANJU</option><option value="UMA MAHESHWARI">UMA MAHESHWARI</option></select>
         <label htmlFor="referralCode">Referral link or code <span className="optional-label">(optional)</span></label><input id="referralCode" name="referralCode" type="text" defaultValue={referral} placeholder="Paste referral link or code" autoComplete="off" /><small className="field-hint">If someone shared a Travelmithra referral link, paste it here.</small>
-        <label htmlFor="registerUsername">Username</label><input id="registerUsername" name="registerUsername" type="text" placeholder="Choose a username" required />
+        <label htmlFor="registerUsername">Email address</label><input id="registerUsername" name="registerUsername" type="email" placeholder="agent@example.com" required />
         <label htmlFor="registerPassword">Password</label><input id="registerPassword" name="registerPassword" type="password" placeholder="Choose a password" required />
         <label htmlFor="registerAvatar">Profile picture</label><label className="file-input-wrapper" htmlFor="registerAvatar"><input id="registerAvatar" name="registerAvatar" type="file" accept="image/*" /><span className="file-input-icon">Choose profile image</span></label>
         <button type="submit" className="primary-btn">Continue to rules</button>
@@ -84,6 +86,12 @@ export default function Register({ onRegister }: RegisterProps) {
       <p className="section-kicker">Agent application</p><h3>Rules &amp; regulations</h3>
       <div className="agent-rules handbook-frame"><iframe title="Associate Travel Consultant Handbook" scrolling="no" src="/associate-travel-consultant-handbook.pdf#toolbar=0&navpanes=0&scrollbar=1&statusbar=0&view=FitH&zoom=page-width" /></div>
       <p className="handbook-download"><a href="/associate-travel-consultant-handbook.pdf" download="Travelmithra-Associate-Travel-Consultant-Handbook.pdf">Save handbook</a></p>
+      <div className="agreement-fields">
+        <label>Consultant name<input value={pending?.name || ''} readOnly /></label>
+        <label>Email address<input value={pending?.username || ''} readOnly /></label>
+        <label>Signature<input value={signature} onChange={(event) => setSignature(event.target.value)} placeholder="Type your full name as signature" required /></label>
+        <label>Date<input type="date" value={agreementDate} onChange={(event) => setAgreementDate(event.target.value)} required /></label>
+      </div>
       {error && <div className="error-message">{error}</div>}
       <label className="rules-consent"><input type="checkbox" checked={agreed} onChange={(event) => setAgreed(event.target.checked)} /> I have read and agree to the agent rules and regulations.</label>
       <button type="button" className="primary-btn" disabled={!agreed || loading} onClick={submitRegistration}>{loading ? 'Submitting application...' : 'Agree & submit application'}</button>
