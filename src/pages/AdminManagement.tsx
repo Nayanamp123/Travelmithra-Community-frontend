@@ -9,6 +9,8 @@ type Booking = { id: string; customer: string; route: string; date: string; amou
 type Customer = { name: string; email: string; phone: string; password?: string; trips: number; joined: string; active: boolean };
 type Reward = { id: number; agent: string; traveler: string; bookingId?: string; amount: number; note: string; status: string; createdAt: string };
 const AGENTS_STORAGE_KEY = 'travelmithra-agents';
+const calculateBalance = (booking: Pick<Booking, 'previous' | 'received' | 'amount'>) =>
+  Number(booking.previous || 0) + Number(booking.received || 0) - Number(booking.amount || 0);
 const RECEIPT_SEQUENCE_STORAGE_KEY = 'travelmithra-next-receipt-number-v2';
 const RECEIPT_NUMBERS_STORAGE_KEY = 'travelmithra-receipt-numbers-v2';
 
@@ -74,7 +76,7 @@ export default function AdminManagement({ credentials }: { credentials: AdminCre
   };
 
   const downloadReceipt = (booking: Booking) => {
-    const balance = booking.previous + booking.received - booking.amount;
+    const balance = calculateBalance(booking);
     const receiptNumbers = JSON.parse(localStorage.getItem(RECEIPT_NUMBERS_STORAGE_KEY) || '{}') as Record<string, number>;
     let receiptNumber = receiptNumbers[booking.id];
     if (!Number.isInteger(receiptNumber)) {
@@ -85,7 +87,9 @@ export default function AdminManagement({ credentials }: { credentials: AdminCre
       localStorage.setItem(RECEIPT_SEQUENCE_STORAGE_KEY, String(receiptNumber + 1));
     }
     const receiptNo = `TMH/${receiptNumber}/${formatDate(booking.date).replace(/\//g, '')}`;
-    const amountToPay = Math.abs(Math.min(balance, 0));
+    // Balance is calculated from all three payment values. Display the
+    // outstanding difference even when the result is negative.
+    const amountToPay = Math.abs(balance);
 
     const html = `<!DOCTYPE html>
 <html>
@@ -228,7 +232,7 @@ body:after{display:none}
         booking.amount,
         booking.received,
         booking.previous,
-        booking.previous + booking.received - booking.amount,
+        calculateBalance(booking),
         booking.paymentMode,
         booking.executive,
         booking.remarks || '',
