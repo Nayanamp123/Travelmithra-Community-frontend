@@ -16,6 +16,8 @@ export default function Register({ onRegister }: RegisterProps) {
   const [loading, setLoading] = useState(false);
   const [signature, setSignature] = useState('');
   const [agreementDate, setAgreementDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [registrationChallenge, setRegistrationChallenge] = useState('');
+  const [registrationOtp, setRegistrationOtp] = useState('');
   const [consultantId] = useState(() => `TM-${Math.floor(100000 + Math.random() * 900000)}`);
   const referral = new URLSearchParams(location.search).get('ref') || '';
 
@@ -54,7 +56,11 @@ export default function Register({ onRegister }: RegisterProps) {
     if (!pending || !agreed) return;
     setLoading(true); setError('');
     try {
-      const response = await authAPI.register(pending.name, pending.username, pending.phone, pending.password, pending.avatar, pending.referral || undefined, true, consultantId, pending.salesExecutive);
+      if (!registrationChallenge) {
+        const sent = await authAPI.sendRegistrationOtp({ name: pending.name, username: pending.username, phone: pending.phone, password: pending.password, avatar: pending.avatar, referralCode: pending.referral || undefined, termsAccepted: true, consultantId, salesExecutive: pending.salesExecutive });
+        setRegistrationChallenge(sent.challengeId); setError(`Enter the OTP sent to ${sent.maskedEmail}.`); setLoading(false); return;
+      }
+      const response = await authAPI.verifyRegistrationOtp(registrationChallenge, registrationOtp);
       onRegister(response.user); navigate('/dashboard');
     } catch (err) { setError(err instanceof Error ? err.message : 'Registration failed'); setLoading(false); }
   };
@@ -95,6 +101,7 @@ export default function Register({ onRegister }: RegisterProps) {
       {error && <div className="error-message">{error}</div>}
       <label className="rules-consent"><input type="checkbox" checked={agreed} onChange={(event) => setAgreed(event.target.checked)} /> I have read and agree to the agent rules and regulations.</label>
       <button type="button" className="primary-btn" disabled={!agreed || loading} onClick={submitRegistration}>{loading ? 'Submitting application...' : 'Agree & submit application'}</button>
+      {registrationChallenge && <input value={registrationOtp} onChange={(event) => setRegistrationOtp(event.target.value.replace(/\D/g, '').slice(0, 6))} inputMode="numeric" maxLength={6} placeholder="Enter email OTP" aria-label="Registration email OTP" />}
       <button type="button" className="secondary-btn" onClick={() => setStep('details')}>Back to details</button>
     </>}
   </div></section>;

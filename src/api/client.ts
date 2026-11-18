@@ -70,6 +70,16 @@ export type TeamLeadCredentials = {
 // ===== USER AUTHENTICATION API =====
 
 export const authAPI = {
+  sendRegistrationOtp: async (payload: Record<string, unknown>) => {
+    const response = await request('/auth/register/send-otp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+    if (!response.ok) { const error = await response.json(); throw new Error(error.error || 'Could not send registration OTP'); }
+    return response.json();
+  },
+  verifyRegistrationOtp: async (challengeId: string, otp: string) => {
+    const response = await request('/auth/register/verify-otp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ challengeId, otp }) });
+    if (!response.ok) { const error = await response.json(); throw new Error(error.error || 'Registration OTP verification failed'); }
+    return response.json();
+  },
   register: async (name: string, username: string, phone: string, password: string, avatar?: string, referralCode?: string, termsAccepted = false, consultantId?: string, salesExecutive?: string) => {
     const response = await request('/auth/register', {
       method: 'POST',
